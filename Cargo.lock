@@ -1338,6 +1338,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
+name = "fallible-iterator"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
+
+[[package]]
 name = "fast-math"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2396,6 +2402,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
 
 [[package]]
+name = "md-5"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66b48670c893079d3c2ed79114e3644b7004df1c361a4e0ad52e2e6940d07c3d"
+dependencies = [
+ "digest 0.10.3",
+]
+
+[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3029,6 +3044,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "phf"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "928c6535de93548188ef63bb7c4036bd415cd8f36ad25af44b9789b2ee72a48c"
+dependencies = [
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1fb5f6f826b772a8d4c0394209441e7d37cbbb967ae9c7e0e8134365c9ee676"
+dependencies = [
+ "siphasher",
+]
+
+[[package]]
 name = "pickledb"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3106,6 +3139,75 @@ dependencies = [
  "cpufeatures",
  "opaque-debug 0.3.0",
  "universal-hash",
+]
+
+[[package]]
+name = "postgres"
+version = "0.19.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "960c214283ef8f0027974c03e9014517ced5db12f021a9abb66185a5751fab0a"
+dependencies = [
+ "bytes",
+ "fallible-iterator",
+ "futures-util",
+ "log",
+ "tokio",
+ "tokio-postgres",
+]
+
+[[package]]
+name = "postgres-derive"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e76c801e97c9cf696097369e517785b98056e98b21149384c812febfc5912f2"
+dependencies = [
+ "proc-macro2 1.0.38",
+ "quote 1.0.18",
+ "syn 1.0.93",
+]
+
+[[package]]
+name = "postgres-openssl"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1de0ea6504e07ca78355a6fb88ad0f36cafe9e696cbc6717f16a207f3a60be72"
+dependencies = [
+ "futures 0.3.21",
+ "openssl",
+ "tokio",
+ "tokio-openssl",
+ "tokio-postgres",
+]
+
+[[package]]
+name = "postgres-protocol"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "878c6cbf956e03af9aa8204b407b9cbf47c072164800aa918c516cd4b056c50c"
+dependencies = [
+ "base64 0.13.0",
+ "byteorder",
+ "bytes",
+ "fallible-iterator",
+ "hmac 0.12.1",
+ "md-5",
+ "memchr",
+ "rand 0.8.5",
+ "sha2 0.10.2",
+ "stringprep",
+]
+
+[[package]]
+name = "postgres-types"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73d946ec7d256b04dfadc4e6a3292324e6f417124750fc5c0950f981b703a0f1"
+dependencies = [
+ "bytes",
+ "chrono",
+ "fallible-iterator",
+ "postgres-derive",
+ "postgres-protocol",
 ]
 
 [[package]]
@@ -4093,13 +4195,35 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0bccbcf40c8938196944a3da0e133e031a33f4d6b72db3bda3cc556e361905d"
+dependencies = [
+ "lazy_static",
+ "parking_lot 0.11.2",
+ "serial_test_derive 0.5.1",
+]
+
+[[package]]
+name = "serial_test"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5bcc41d18f7a1d50525d080fd3e953be87c4f9f1a974f3c21798ca00d54ec15"
 dependencies = [
  "lazy_static",
  "parking_lot 0.11.2",
- "serial_test_derive",
+ "serial_test_derive 0.6.0",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2acd6defeddb41eb60bb468f8825d0cfd0c2a76bc03bfd235b6a1dc4f6a1ad5"
+dependencies = [
+ "proc-macro2 1.0.38",
+ "quote 1.0.18",
+ "syn 1.0.93",
 ]
 
 [[package]]
@@ -4242,6 +4366,12 @@ name = "simpl"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a30f10c911c0355f80f1c2faa8096efc4a58cdf8590b954d5b395efa071c711"
+
+[[package]]
+name = "siphasher"
+version = "0.3.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7bd3e3206899af3f8b12af284fafc038cc1dc2b41d1b89dd17297221c5d225de"
 
 [[package]]
 name = "sized-chunks"
@@ -4487,7 +4617,7 @@ dependencies = [
  "rayon",
  "serde_json",
  "serde_yaml",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-clap-utils",
  "solana-cli-config",
  "solana-client",
@@ -4579,7 +4709,7 @@ dependencies = [
  "clap 3.1.8",
  "log",
  "regex",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-download-utils",
  "solana-logger 1.11.1",
  "solana-sdk 1.11.1",
@@ -4784,7 +4914,7 @@ version = "1.11.1"
 dependencies = [
  "futures-util",
  "serde_json",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-client",
  "solana-ledger",
  "solana-logger 1.11.1",
@@ -4854,7 +4984,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-address-lookup-table-program",
  "solana-bloom",
  "solana-client",
@@ -4901,7 +5031,7 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "serde",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-bench-tps",
  "solana-client",
  "solana-core",
@@ -5112,6 +5242,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "solana-geyser-plugin-postgres"
+version = "1.11.1"
+dependencies = [
+ "bs58",
+ "bytemuck",
+ "chrono",
+ "crossbeam-channel",
+ "libc",
+ "libloading",
+ "log",
+ "openssl",
+ "postgres",
+ "postgres-openssl",
+ "postgres-types",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serial_test 0.5.1",
+ "solana-account-decoder",
+ "solana-core",
+ "solana-geyser-plugin-interface",
+ "solana-local-cluster",
+ "solana-logger 1.11.1",
+ "solana-measure",
+ "solana-metrics",
+ "solana-net-utils",
+ "solana-runtime",
+ "solana-sdk 1.11.1",
+ "solana-streamer",
+ "solana-transaction-status",
+ "tempfile",
+ "thiserror",
+ "tokio-postgres",
+]
+
+[[package]]
 name = "solana-gossip"
 version = "1.11.1"
 dependencies = [
@@ -5135,7 +5301,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_derive",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-bloom",
  "solana-clap-utils",
  "solana-client",
@@ -5314,7 +5480,7 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "rayon",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-client",
  "solana-config-program",
  "solana-core",
@@ -5405,7 +5571,7 @@ dependencies = [
  "log",
  "rand 0.7.3",
  "reqwest",
- "serial_test",
+ "serial_test 0.6.0",
  "solana-sdk 1.11.1",
 ]
 
@@ -5696,7 +5862,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "serial_test",
+ "serial_test 0.6.0",
  "soketto",
  "solana-account-decoder",
  "solana-address-lookup-table-program",
@@ -6494,6 +6660,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "stringprep"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ee348cb74b87454fff4b551cbf727025810a004f88aeacae7f85b87f4e9a1c1"
+dependencies = [
+ "unicode-bidi",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6881,6 +7057,42 @@ checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
 dependencies = [
  "native-tls",
  "tokio",
+]
+
+[[package]]
+name = "tokio-openssl"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c08f9ffb7809f1b20c1b398d92acf4cc719874b3b2b2d9ea2f09b4a80350878a"
+dependencies = [
+ "futures-util",
+ "openssl",
+ "openssl-sys",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-postgres"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29a12c1b3e0704ae7dfc25562629798b29c72e6b1d0a681b6f29ab4ae5e7f7bf"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "bytes",
+ "fallible-iterator",
+ "futures-channel",
+ "futures-util",
+ "log",
+ "parking_lot 0.12.0",
+ "percent-encoding 2.1.0",
+ "phf",
+ "pin-project-lite",
+ "postgres-protocol",
+ "postgres-types",
+ "socket2",
+ "tokio",
+ "tokio-util 0.7.1",
 ]
 
 [[package]]
