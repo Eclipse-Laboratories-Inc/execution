@@ -45,9 +45,9 @@ There are two roles in our Layer 2: __Execution Layer__ and __Settlement Layer__
    
    ```
    
-   For now, since Celestia is still unstable, we use PostgreSQL as a simulator, so here is the execution flow:
+   For now, since Celestia is still unstable, we use PostgreSQL as a DA simulator, here is the execution flow:
    
-   * The execution node reproduce blocks, we use [accountsdb-plugin-postgres](./accountsdb-plugin-postgres) to save blocks into PostgreSQL database.
+   * The execution node produce blocks, we use [accountsdb-plugin-postgres](./accountsdb-plugin-postgres) to save blocks into PostgreSQL database.
    
    * The Verification node query blocks from database, reconstruct them and do replay.
 
