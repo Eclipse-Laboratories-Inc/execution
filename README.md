@@ -4,7 +4,7 @@ A Solana based Layer 2 node.
 
 ## Building
 
-For how to build and test code, see [solana]([solana/README.md at master · solana-labs/solana · GitHub](https://github.com/solana-labs/solana/blob/master/README.md))'s succinct instructions.
+For how to build and test code, see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions.
 
 ### Design
 
