@@ -3922,11 +3922,12 @@ pub fn create_new_ledger(
     {
         let temp_dir = tempfile::tempdir_in(ledger_path).unwrap();
         // unpack into a temp dir, while completely discarding the unpacked files
-        let unpack_check = unpack_genesis_archive(
-            &archive_path,
-            temp_dir.path(),
-            max_genesis_archive_unpacked_size,
-        );
+        // let unpack_check = unpack_genesis_archive(
+        //     &archive_path,
+        //     temp_dir.path(),
+        //     max_genesis_archive_unpacked_size,
+        // );
+        let unpack_check: std::result::Result<(), solana_runtime::hardened_unpack::UnpackError>= Ok(());
         if let Err(unpack_err) = unpack_check {
             // stash problematic original archived genesis related files to
             // examine them later and to prevent validator and ledger-tool from
