@@ -1,0 +1,18 @@
+[package]
+name = "shred-replay"
+version = "0.1.0"
+authors = ["cairoliang"]
+edition = "2021"
+description = "Read shared records sequentially from the PostgreSQL database, assembling a ledger to replay slots with solana-ledger-tool"
+repository = "https://github.com/solana-labs/solana"
+license = "Apache-2.0"
+homepage = "https://solana.com/"
+documentation = ""
+
+[dependencies]
+solana-entry = { path = "../entry" }
+solana-ledger = { path = "../ledger" }
+solana-sdk = { path = "../sdk" }
+
+[dev-dependencies]
+assert_cmd = "2.0"
