@@ -251,9 +251,11 @@ impl SimplePostgresClient {
                 )));
             }
             format!(
-                "host={} user={} port={}",
+                "host={} user={} password={} dbname={} port={}",
                 config.host.as_ref().unwrap(),
                 config.user.as_ref().unwrap(),
+                config.password.as_ref().unwrap(),
+                config.dbname.as_ref().unwrap(),
                 port
             )
         };

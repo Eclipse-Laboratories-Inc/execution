@@ -42,6 +42,12 @@ pub struct GeyserPluginPostgresConfig {
     /// The user name of the PostgreSQL server.
     pub user: Option<String>,
 
+    /// The password of the PostgreSQL server.
+    pub password: Option<String>,
+
+    /// The database name of the PostgreSQL server.
+    pub dbname: Option<String>,
+
     /// The port number of the PostgreSQL database, the default is 5432
     pub port: Option<u16>,
 
