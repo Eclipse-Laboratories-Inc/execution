@@ -61,6 +61,7 @@ use {
     },
     thiserror::Error,
 };
+use solana_entry::entry::EntrySender;
 
 // it tracks the block cost available capacity - number of compute-units allowed
 // by max block cost limit.
@@ -1073,6 +1074,7 @@ pub fn confirm_slot(
     progress: &mut ConfirmationProgress,
     skip_verification: bool,
     transaction_status_sender: Option<&TransactionStatusSender>,
+    entry_sender: Option<&EntrySender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     entry_callback: Option<&ProcessCallback>,
     recyclers: &VerifyRecyclers,

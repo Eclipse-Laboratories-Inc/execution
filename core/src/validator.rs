@@ -22,6 +22,7 @@ use {
         tower_storage::TowerStorage,
         tpu::{Tpu, TpuSockets, DEFAULT_TPU_COALESCE_MS},
         tvu::{Tvu, TvuConfig, TvuSockets},
+        entry_service::EntryService,
     },
     crossbeam_channel::{bounded, unbounded, Receiver},
     rand::{thread_rng, Rng},
@@ -111,6 +112,8 @@ use {
         thread::{sleep, Builder, JoinHandle},
         time::{Duration, Instant},
     },
+    solana_entry::entry::{EntrySender, EntryReceiver},
+    solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
 };
 
 const MAX_COMPLETED_DATA_SETS_IN_CHANNEL: usize = 100_000;
@@ -332,6 +335,13 @@ struct TransactionHistoryServices {
     cache_block_meta_service: Option<CacheBlockMetaService>,
 }
 
+#[derive(Default)]
+struct EntryHistoryServices {
+    entry_history_sender: Option<EntrySender>,
+    entry_history_service: Option<EntryService>,
+}
+
+
 pub struct Validator {
     validator_exit: Arc<RwLock<Exit>>,
     json_rpc_service: Option<JsonRpcService>,
@@ -510,10 +520,15 @@ impl Validator {
             .as_ref()
             .and_then(|geyser_plugin_service| geyser_plugin_service.get_block_metadata_notifier());
 
+        let entry_notifier = geyser_plugin_service
+            .as_ref()
+            .and_then(|geyser_plugin_service| geyser_plugin_service.get_entry_notifier());
+
         info!(
-            "Geyser plugin: accounts_update_notifier: {} transaction_notifier: {}",
+            "Geyser plugin: accounts_update_notifier: {} transaction_notifier: {} entry_notifier: {}",
             accounts_update_notifier.is_some(),
-            transaction_notifier.is_some()
+            transaction_notifier.is_some(),
+            entry_notifier.is_some()
         );
 
         let system_monitor_service = Some(SystemMonitorService::new(
@@ -546,6 +561,10 @@ impl Validator {
                 cache_block_meta_sender,
                 cache_block_meta_service,
             },
+            EntryHistoryServices{
+                entry_history_sender,
+                entry_history_service,
+            },
             blockstore_process_options,
             blockstore_root_scan,
             pruned_banks_receiver,
@@ -556,6 +575,7 @@ impl Validator {
             &start_progress,
             accounts_update_notifier,
             transaction_notifier,
+            entry_notifier,
             Some(poh_timing_point_sender.clone()),
         );
 
@@ -1371,6 +1391,7 @@ fn load_blockstore(
     start_progress: &Arc<RwLock<ValidatorStartProgress>>,
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
     transaction_notifier: Option<TransactionNotifierLock>,
+    entry_notifier: Option<EntryNotifierLock>,
     poh_timing_point_sender: Option<PohTimingSender>,
 ) -> (
     GenesisConfig,
@@ -1382,6 +1403,7 @@ fn load_blockstore(
     LeaderScheduleCache,
     Option<StartingSnapshotHashes>,
     TransactionHistoryServices,
+    EntryHistoryServices,
     blockstore_processor::ProcessOptions,
     BlockstoreRootScan,
     DroppedSlotsReceiver,
@@ -1470,6 +1492,18 @@ fn load_blockstore(
             TransactionHistoryServices::default()
         };
 
+    let is_plugin_entry_history_required = entry_notifier.as_ref().is_some();
+    let entry_history_services =
+        if is_plugin_entry_history_required {
+            initialize_entry_history_services(
+                blockstore.clone(),
+                exit,
+                entry_notifier,
+            )
+        } else {
+            EntryHistoryServices::default()
+        };
+
     let (bank_forks, mut leader_schedule_cache, starting_snapshot_hashes) =
         bank_forks_utils::load_bank_forks(
             &genesis_config,
@@ -1530,6 +1564,7 @@ fn load_blockstore(
         leader_schedule_cache,
         starting_snapshot_hashes,
         transaction_history_services,
+        entry_history_services,
         process_options,
         blockstore_root_scan,
         pruned_banks_receiver,
@@ -1855,6 +1890,24 @@ fn initialize_rpc_transaction_history_services(
         rewards_recorder_service,
         cache_block_meta_sender,
         cache_block_meta_service,
+    }
+}
+
+fn initialize_entry_history_services(
+    blockstore: Arc<Blockstore>,
+    exit: &Arc<AtomicBool>,
+    entry_notifier: Option<EntryNotifierLock>,
+) -> EntryHistoryServices {
+    let (entry_history_sender, entry_history_receiver) = unbounded();
+    let entry_history_sender = Some(entry_history_sender);
+    let entry_history_service = Some(EntryService::new(
+        entry_history_receiver,
+        blockstore.clone(),
+        exit,
+    ));
+    EntryHistoryServices {
+        entry_history_sender,
+        entry_history_service,
     }
 }
 
