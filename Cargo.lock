@@ -4628,9 +4628,23 @@ name = "shred-replay"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "bs58",
+ "bytemuck",
+ "chrono",
+ "clap 2.33.3",
+ "crossbeam-channel",
+ "log",
+ "openssl",
+ "postgres",
+ "postgres-openssl",
+ "postgres-types",
+ "serde",
+ "serde_derive",
+ "serde_json",
  "solana-entry",
  "solana-ledger",
  "solana-sdk 1.14.6",
+ "thiserror",
 ]
 
 [[package]]
