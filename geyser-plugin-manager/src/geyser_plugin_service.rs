@@ -5,6 +5,7 @@ use {
         block_metadata_notifier_interface::BlockMetadataNotifierLock,
         geyser_plugin_manager::GeyserPluginManager, slot_status_notifier::SlotStatusNotifierImpl,
         slot_status_observer::SlotStatusObserver, transaction_notifier::TransactionNotifierImpl,
+        entry_notifier::EntryNotifierImpl, entry_notifier_interface::EntryNotifierLock,
     },
     crossbeam_channel::Receiver,
     log::*,
@@ -51,6 +52,7 @@ pub struct GeyserPluginService {
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
     transaction_notifier: Option<TransactionNotifierLock>,
     block_metadata_notifier: Option<BlockMetadataNotifierLock>,
+    entry_notifier: Option<EntryNotifierLock>,
 }
 
 impl GeyserPluginService {
@@ -83,6 +85,7 @@ impl GeyserPluginService {
         let account_data_notifications_enabled =
             plugin_manager.account_data_notifications_enabled();
         let transaction_notifications_enabled = plugin_manager.transaction_notifications_enabled();
+        let entry_notifications_enabled = plugin_manager.entry_notifications_enabled();
 
         let plugin_manager = Arc::new(RwLock::new(plugin_manager));
 
@@ -99,6 +102,14 @@ impl GeyserPluginService {
             if transaction_notifications_enabled {
                 let transaction_notifier = TransactionNotifierImpl::new(plugin_manager.clone());
                 Some(Arc::new(RwLock::new(transaction_notifier)))
+            } else {
+                None
+            };
+
+        let entry_notifier: Option<EntryNotifierLock> =
+            if entry_notifications_enabled {
+                let entry_notifier = EntryNotifierImpl::new(plugin_manager.clone());
+                Some(Arc::new(RwLock::new(entry_notifier)))
             } else {
                 None
             };
@@ -129,6 +140,7 @@ impl GeyserPluginService {
             accounts_update_notifier,
             transaction_notifier,
             block_metadata_notifier,
+            entry_notifier,
         })
     }
 
@@ -206,6 +218,10 @@ impl GeyserPluginService {
 
     pub fn get_block_metadata_notifier(&self) -> Option<BlockMetadataNotifierLock> {
         self.block_metadata_notifier.clone()
+    }
+
+    pub fn get_entry_notifier(&self) -> Option<EntryNotifierLock> {
+        self.entry_notifier.clone()
     }
 
     pub fn join(self) -> thread::Result<()> {

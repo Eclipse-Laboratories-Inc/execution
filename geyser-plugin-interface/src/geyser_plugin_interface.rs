@@ -165,6 +165,10 @@ pub enum GeyserPluginError {
     /// Error when updating the transaction.
     #[error("Error updating transaction. Error message: ({msg})")]
     TransactionUpdateError { msg: String },
+
+    /// Error when updating the entry.
+    #[error("Error updating entry. Error message: ({msg})")]
+    EntryUpdateError { msg: String }
 }
 
 /// The current status of a slot
@@ -260,6 +264,10 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
         Ok(())
     }
 
+    fn notify_entry(&mut self) -> Result<()> {
+        Ok(())
+    }
+
     /// Check if the plugin is interested in account data
     /// Default is true -- if the plugin is not interested in
     /// account data, please return false.
@@ -273,4 +281,6 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
     fn transaction_notifications_enabled(&self) -> bool {
         false
     }
+
+    fn entry_notifications_enabled(&self) -> bool { true }
 }

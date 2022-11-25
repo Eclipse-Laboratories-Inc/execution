@@ -72,4 +72,14 @@ impl GeyserPluginManager {
         }
         false
     }
+
+    /// Check if there is any plugin interested in entry
+    pub fn entry_notifications_enabled(&self) -> bool {
+        for plugin in &self.plugins {
+            if plugin.entry_notifications_enabled() {
+                return true;
+            }
+        }
+        false
+    }
 }
