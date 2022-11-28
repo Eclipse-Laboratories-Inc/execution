@@ -1,148 +1,150 @@
-<p align="center">
-  <a href="https://solana.com">
-    <img alt="Solana" src="https://i.imgur.com/IKyzQ6T.png" width="250" />
-  </a>
-</p>
+# Solana Layer2 node
 
-[![Solana crate](https://img.shields.io/crates/v/solana-core.svg)](https://crates.io/crates/solana-core)
-[![Solana documentation](https://docs.rs/solana-core/badge.svg)](https://docs.rs/solana-core)
-[![Build status](https://badge.buildkite.com/8cc350de251d61483db98bdfc895b9ea0ac8ffa4a32ee850ed.svg?branch=master)](https://buildkite.com/solana-labs/solana/builds?branch=master)
-[![codecov](https://codecov.io/gh/solana-labs/solana/branch/master/graph/badge.svg)](https://codecov.io/gh/solana-labs/solana)
+A Solana based Layer 2 node. 
 
-# Building
+## Building
 
-## **1. Install rustc, cargo and rustfmt.**
+For how to build and test code, see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions.
 
-```bash
-$ curl https://sh.rustup.rs -sSf | sh
-$ source $HOME/.cargo/env
-$ rustup component add rustfmt
+### Design
+
+The architecture of design as below:
+
+![Architecture](./architecture-diagram.svg)
+
+There are two roles in our Layer 2: __Execution Layer__ and __Settlement Layer__.
+
+* Execution Layer contains:
+  
+  * Execution Node
+    
+    Handles all Layer 2 transactions, produce block, push block to DA. 
+  
+  * Verification Node:
+    
+    Pull data from DA, reconstruct block and replay.
+
+* Settlement Layer contains:
+  
+  * Full node:
+    
+    Check the challenge and push transaction data to DA.
+  
+  * Light node:
+    
+    Sync header data.
+
+## Progress
+
+### 1. Execution Layer
+
+```mermaid
+graph TD
+    A[Execution Node] --> |push block| B[DA]
+    B --> |replay data| C[Verification Node]
 ```
 
-When building the master branch, please make sure you are using the latest stable rust version by running:
+   For now, since Celestia is still unstable, we use PostgreSQL as a DA simulator, here is the execution flow:
 
-```bash
-$ rustup update
-```
+#### Execution flow of Execution Layer
 
-When building a specific release branch, you should check the rust version in `ci/rust-version.sh` and if necessary, install that version by running:
-```bash
-$ rustup install VERSION
-```
-Note that if this is not the latest rust version on your machine, cargo commands may require an [override](https://rust-lang.github.io/rustup/overrides.html) in order to use the correct version.
+* The execution node produce blocks, we use [accountsdb-plugin-postgres](./solana-accountsdb-plugin-postgres) to save blocks into PostgreSQL database.
+  
+  Instructions:
+  
+  * Build code with submdoule
+    
+    ```
+    git clone https://github.com/Eclipse-Laboratories-Inc/settlement.git
+    cd settlement
+    cargo build --release
+    ```
+  
+  * Setup database
+    
+    For detailed documents of how to setup database, see [here](./solana-accountsdb-plugin-postgres#database-setup) .
+    
+    Suppose we got a database named `solana`, a username `solana` with password `1234`. 
+    
+    Then we should create Schema Objects in our solana  database.Our current directory is still `solana-executor`, so here is the command:
+    
+    ```shell
+    psql -U solana -p 5432 -h localhost -d solana -f solana-accountsdb-plugin-postgres/scripts/create_schema.sql
+    ```
+    
+    Let's explain the parameters in above command:
+    
+    * -U -- username
+    
+    * -p -- port of PostgreSQL server
+    
+    * -h -- ip address pf PostgreSQL server
+    
+    * -d -- database name
+    
+    * -f -- the path of SQL script file we want to execute
+  
+  * Configure plugin settings
+    
+    The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
+    
+    ```json
+    {
+        "libpath": "../../target/release/libsolana_geyser_plugin_postgres.dylib",
+        "host": "localhost",
+        "user": "solana",
+        "password":"1234",
+        "dbname":"solana",
+        "port": 5432,
+        "threads": 20,
+        "batch_size": 20,
+        "panic_on_db_errors": true,
+        "accounts_selector" : {
+            "accounts" : ["*"]
+        }
+    }
+    ```
+    
+    The configuration details are:
+    ```
+    libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
+    host -- PostgreSQL server ip address
+    user -- Username of database
+    password -- Paddword of database
+    dbname -- Database name
+    port -- Port of PostgreSQL server, in our case, 5432.
+    ```
+  
+  * Start execution node
+    
+    For now, we use Test Validator as our execution node, we start it with plugin configure file we just set.
+    
+    ```shell
+    ./target/release/solana-test-validator --geyser-plugin-config ./solana-accountsdb-plugin-postgres/scripts/geyser.json
+    ```
+    
+    Now our test validator start producing blocks, and all these data saved in PostgreSQL.
 
-On Linux systems you may need to install libssl-dev, pkg-config, zlib1g-dev, protobuf etc.  On Ubuntu:
+* Start verification node with `--no-voting` flag, then verification node querys shred from database, replay and verify.
+  ```shell=
+  # replay shred and verify the blockstore
+  shred-replay-service -c <pgconfig_path.json> -l <ledger_path> verify
+  
+  # replay shred and generate bank hash.
+  shred-replay-service -c <pgconfig_path.json> -l <ledger_path> bank_hash
+  ```
+  
+  _pgconfig_path.json_ file has same parameters as geyser plugin configuration, which means same PG settings and database name as execution node's.
 
-```bash
-$ sudo apt-get update
-$ sudo apt-get install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
-```
+#### Core designs of Execution Layer
 
-## **2. Download the source code.**
+  For Execution Node: 
+  * Adding a `entry_notifier` related functions in `geyser-plugin`, which is used for writing entries into PG when validator actives.
 
-```bash
-$ git clone https://github.com/solana-labs/solana.git
-$ cd solana
-```
+  For Verification Node: 
+  * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
+  *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
+  
+### 2. Settlement Layer
 
-## **3. Build.**
-
-```bash
-$ cargo build
-```
-
-# Testing
-
-**Run the test suite:**
-
-```bash
-$ cargo test
-```
-
-### Starting a local testnet
-Start your own testnet locally, instructions are in the [online docs](https://docs.solana.com/cluster/bench-tps).
-
-### Accessing the remote development cluster
-* `devnet` - stable public cluster for development accessible via
-devnet.solana.com. Runs 24/7. Learn more about the [public clusters](https://docs.solana.com/clusters)
-
-# Benchmarking
-
-First, install the nightly build of rustc. `cargo bench` requires the use of the
-unstable features only available in the nightly build.
-
-```bash
-$ rustup install nightly
-```
-
-Run the benchmarks:
-
-```bash
-$ cargo +nightly bench
-```
-
-# Release Process
-
-The release process for this project is described [here](RELEASE.md).
-
-# Code coverage
-
-To generate code coverage statistics:
-
-```bash
-$ scripts/coverage.sh
-$ open target/cov/lcov-local/index.html
-```
-
-Why coverage? While most see coverage as a code quality metric, we see it primarily as a developer
-productivity metric. When a developer makes a change to the codebase, presumably it's a *solution* to
-some problem.  Our unit-test suite is how we encode the set of *problems* the codebase solves. Running
-the test suite should indicate that your change didn't *infringe* on anyone else's solutions. Adding a
-test *protects* your solution from future changes. Say you don't understand why a line of code exists,
-try deleting it and running the unit-tests. The nearest test failure should tell you what problem
-was solved by that code. If no test fails, go ahead and submit a Pull Request that asks, "what
-problem is solved by this code?" On the other hand, if a test does fail and you can think of a
-better way to solve the same problem, a Pull Request with your solution would most certainly be
-welcome! Likewise, if rewriting a test can better communicate what code it's protecting, please
-send us that patch!
-
-# Disclaimer
-
-All claims, content, designs, algorithms, estimates, roadmaps,
-specifications, and performance measurements described in this project
-are done with the Solana Foundation's ("SF") good faith efforts. It is up to
-the reader to check and validate their accuracy and truthfulness.
-Furthermore, nothing in this project constitutes a solicitation for
-investment.
-
-Any content produced by SF or developer resources that SF provides are
-for educational and inspirational purposes only. SF does not encourage,
-induce or sanction the deployment, integration or use of any such
-applications (including the code comprising the Solana blockchain
-protocol) in violation of applicable laws or regulations and hereby
-prohibits any such deployment, integration or use. This includes the use of
-any such applications by the reader (a) in violation of export control
-or sanctions laws of the United States or any other applicable
-jurisdiction, (b) if the reader is located in or ordinarily resident in
-a country or territory subject to comprehensive sanctions administered
-by the U.S. Office of Foreign Assets Control (OFAC), or (c) if the
-reader is or is working on behalf of a Specially Designated National
-(SDN) or a person subject to similar blocking or denied party
-prohibitions.
-
-The reader should be aware that U.S. export control and sanctions laws
-prohibit U.S. persons (and other persons that are subject to such laws)
-from transacting with persons in certain countries and territories or
-that are on the SDN list. As a project-based primarily on open-source
-software, it is possible that such sanctioned persons may nevertheless
-bypass prohibitions, obtain the code comprising the Solana blockchain
-protocol (or other project code or applications) and deploy, integrate,
-or otherwise use it. Accordingly, there is a risk to individuals that
-other persons using the Solana blockchain protocol may be sanctioned
-persons and that transactions with such persons would be a violation of
-U.S. export controls and sanctions law. This risk applies to
-individuals, organizations, and other ecosystem participants that
-deploy, integrate, or use the Solana blockchain protocol code directly
-(e.g., as a node operator), and individuals that transact on the Solana
-blockchain through light clients, third party interfaces, and/or wallet
-software.
+    TBD
