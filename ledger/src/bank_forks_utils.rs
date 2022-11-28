@@ -70,6 +70,7 @@ pub fn load(
         transaction_status_sender,
         cache_block_meta_sender,
         &AbsRequestSender::default(),
+        None,
     )
     .map(|_| (bank_forks, leader_schedule_cache, starting_snapshot_hashes))
 }

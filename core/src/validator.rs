@@ -718,7 +718,7 @@ impl Validator {
             blockstore_root_scan,
             accounts_background_request_sender.clone(),
             config,
-            // entry_sender,
+            entry_sender.as_ref(),
         );
 
         maybe_warp_slot(
@@ -1594,7 +1594,7 @@ pub struct ProcessBlockStore<'a> {
     accounts_background_request_sender: AbsRequestSender,
     config: &'a ValidatorConfig,
     tower: Option<Tower>,
-    // entry_sender: Option<EntrySender>,
+    entry_sender: Option<&'a EntrySender>,
 }
 
 impl<'a> ProcessBlockStore<'a> {
@@ -1613,7 +1613,7 @@ impl<'a> ProcessBlockStore<'a> {
         blockstore_root_scan: BlockstoreRootScan,
         accounts_background_request_sender: AbsRequestSender,
         config: &'a ValidatorConfig,
-        // entry_sender: Option<EntrySender>,
+        entry_sender: Option<&'a EntrySender>,
     ) -> Self {
         Self {
             id,
@@ -1630,7 +1630,7 @@ impl<'a> ProcessBlockStore<'a> {
             accounts_background_request_sender,
             config,
             tower: None,
-            // entry_sender,
+            entry_sender,
         }
     }
 
@@ -1665,6 +1665,7 @@ impl<'a> ProcessBlockStore<'a> {
                 self.transaction_status_sender,
                 self.cache_block_meta_sender.as_ref(),
                 &self.accounts_background_request_sender,
+                &self.entry_sender,
             )
             .unwrap_or_else(|err| {
                 error!("Failed to load ledger: {:?}", err);
