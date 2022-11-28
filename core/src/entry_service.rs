@@ -12,6 +12,7 @@ use {
     },
     solana_entry::entry::EntryReceiver,
 };
+use solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock;
 
 pub struct EntryService {
     thread_hdl: JoinHandle<()>,
@@ -21,7 +22,7 @@ impl EntryService {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(
         entry_receiver: EntryReceiver,
-        blockstore: Arc<Blockstore>,
+        entry_notifier: Option<EntryNotifierLock>,
         exit: &Arc<AtomicBool>,
     ) -> Self {
         let exit = exit.clone();
@@ -37,6 +38,11 @@ impl EntryService {
                         break;
                     }
                     Ok(entries) => {
+                        if let Some(entry_notifier) = entry_notifier.as_ref() {
+                            for entry in entries.iter() {
+                                entry_notifier.write().unwrap().notify_entry(entry);
+                            }
+                        }
                     }
                     _ => {}
                 }

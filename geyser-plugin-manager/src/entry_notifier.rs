@@ -21,7 +21,7 @@ impl EntryNotifier for EntryNotifierImpl {
             return;
         }
         for plugin in plugin_manager.plugins.iter_mut() {
-            match plugin.notify_entry() {
+            match plugin.notify_entry(entry) {
                 Err(err) => {
                     error!(
                         "Failed to update shred error: {:?} to plugin {}",
@@ -44,10 +44,5 @@ impl EntryNotifier for EntryNotifierImpl {
 impl EntryNotifierImpl {
     pub fn new(plugin_manager: Arc<RwLock<GeyserPluginManager>>) -> Self {
         Self { plugin_manager }
-    }
-
-    fn build_shred(
-        entry: &Entry,
-    ) {
     }
 }

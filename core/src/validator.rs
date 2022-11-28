@@ -336,9 +336,9 @@ struct TransactionHistoryServices {
 }
 
 #[derive(Default)]
-struct EntryHistoryServices {
-    entry_history_sender: Option<EntrySender>,
-    entry_history_service: Option<EntryService>,
+struct EntryServices {
+    entry_sender: Option<EntrySender>,
+    entry_service: Option<EntryService>,
 }
 
 
@@ -371,6 +371,7 @@ pub struct Validator {
     ledger_metric_report_service: LedgerMetricReportService,
     accounts_background_service: AccountsBackgroundService,
     accounts_hash_verifier: AccountsHashVerifier,
+    entry_service: Option<EntryService>,
 }
 
 // in the distant future, get rid of ::new()/exit() and use Result properly...
@@ -561,9 +562,9 @@ impl Validator {
                 cache_block_meta_sender,
                 cache_block_meta_service,
             },
-            EntryHistoryServices{
-                entry_history_sender,
-                entry_history_service,
+            EntryServices{
+                entry_sender,
+                entry_service,
             },
             blockstore_process_options,
             blockstore_root_scan,
@@ -717,6 +718,7 @@ impl Validator {
             blockstore_root_scan,
             accounts_background_request_sender.clone(),
             config,
+            // entry_sender,
         );
 
         maybe_warp_slot(
@@ -1109,6 +1111,7 @@ impl Validator {
             ledger_metric_report_service,
             accounts_background_service,
             accounts_hash_verifier,
+            entry_service
         }
     }
 
@@ -1193,6 +1196,12 @@ impl Validator {
             cache_block_meta_service
                 .join()
                 .expect("cache_block_meta_service");
+        }
+
+        if let Some(entry_service) = self.entry_service {
+            entry_service
+                .join()
+                .expect("entry_service");
         }
 
         if let Some(system_monitor_service) = self.system_monitor_service {
@@ -1403,7 +1412,7 @@ fn load_blockstore(
     LeaderScheduleCache,
     Option<StartingSnapshotHashes>,
     TransactionHistoryServices,
-    EntryHistoryServices,
+    EntryServices,
     blockstore_processor::ProcessOptions,
     BlockstoreRootScan,
     DroppedSlotsReceiver,
@@ -1492,16 +1501,15 @@ fn load_blockstore(
             TransactionHistoryServices::default()
         };
 
-    let is_plugin_entry_history_required = entry_notifier.as_ref().is_some();
-    let entry_history_services =
-        if is_plugin_entry_history_required {
-            initialize_entry_history_services(
-                blockstore.clone(),
+    let is_plugin_entry_required = entry_notifier.as_ref().is_some();
+    let entry_services =
+        if is_plugin_entry_required {
+            initialize_entry_services(
                 exit,
                 entry_notifier,
             )
         } else {
-            EntryHistoryServices::default()
+            EntryServices::default()
         };
 
     let (bank_forks, mut leader_schedule_cache, starting_snapshot_hashes) =
@@ -1564,7 +1572,7 @@ fn load_blockstore(
         leader_schedule_cache,
         starting_snapshot_hashes,
         transaction_history_services,
-        entry_history_services,
+        entry_services,
         process_options,
         blockstore_root_scan,
         pruned_banks_receiver,
@@ -1586,6 +1594,7 @@ pub struct ProcessBlockStore<'a> {
     accounts_background_request_sender: AbsRequestSender,
     config: &'a ValidatorConfig,
     tower: Option<Tower>,
+    // entry_sender: Option<EntrySender>,
 }
 
 impl<'a> ProcessBlockStore<'a> {
@@ -1604,6 +1613,7 @@ impl<'a> ProcessBlockStore<'a> {
         blockstore_root_scan: BlockstoreRootScan,
         accounts_background_request_sender: AbsRequestSender,
         config: &'a ValidatorConfig,
+        // entry_sender: Option<EntrySender>,
     ) -> Self {
         Self {
             id,
@@ -1620,6 +1630,7 @@ impl<'a> ProcessBlockStore<'a> {
             accounts_background_request_sender,
             config,
             tower: None,
+            // entry_sender,
         }
     }
 
@@ -1893,21 +1904,20 @@ fn initialize_rpc_transaction_history_services(
     }
 }
 
-fn initialize_entry_history_services(
-    blockstore: Arc<Blockstore>,
+fn initialize_entry_services(
     exit: &Arc<AtomicBool>,
     entry_notifier: Option<EntryNotifierLock>,
-) -> EntryHistoryServices {
-    let (entry_history_sender, entry_history_receiver) = unbounded();
-    let entry_history_sender = Some(entry_history_sender);
-    let entry_history_service = Some(EntryService::new(
-        entry_history_receiver,
-        blockstore.clone(),
+) -> EntryServices {
+    let (entry_sender, entry_receiver) = unbounded();
+    let entry_sender = Some(entry_sender);
+    let entry_service = Some(EntryService::new(
+        entry_receiver,
+        entry_notifier,
         exit,
     ));
-    EntryHistoryServices {
-        entry_history_sender,
-        entry_history_service,
+    EntryServices {
+        entry_sender,
+        entry_service,
     }
 }
 

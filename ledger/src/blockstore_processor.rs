@@ -1074,7 +1074,7 @@ pub fn confirm_slot(
     progress: &mut ConfirmationProgress,
     skip_verification: bool,
     transaction_status_sender: Option<&TransactionStatusSender>,
-    entry_sender: Option<&EntrySender>,
+    // entry_sender: Option<&EntrySender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     entry_callback: Option<&ProcessCallback>,
     recyclers: &VerifyRecyclers,
@@ -1097,6 +1097,7 @@ pub fn confirm_slot(
         load_result
     }?;
 
+    // TODO: send shred to shred-channel
     confirm_slot_entries(
         bank,
         slot_entries_load_result,
