@@ -3748,16 +3748,15 @@ checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
 
 [[package]]
 name = "quinn"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7542006acd6e057ff632307d219954c44048f818898da03113d6c0086bfddd9"
+checksum = "57659b2d8340fa1a8b9358d14597b0b62ea8b9f6cd77cde07895079d619d2d4e"
 dependencies = [
  "bytes",
- "futures-channel",
- "futures-util",
- "fxhash",
- "quinn-proto",
+ "pin-project-lite",
+ "quinn-proto 0.9.1",
  "quinn-udp",
+ "rustc-hash",
  "rustls 0.20.6",
  "thiserror",
  "tokio",
@@ -3776,7 +3775,6 @@ dependencies = [
  "rand 0.8.5",
  "ring",
  "rustls 0.20.6",
- "rustls-native-certs",
  "rustls-pemfile 0.2.1",
  "slab",
  "thiserror",
@@ -3786,18 +3784,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "quinn-udp"
-version = "0.1.0"
+name = "quinn-proto"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f7996776e9ee3fc0e5c14476c1a640a17e993c847ae9c81191c2c102fbef903"
+checksum = "57098b1a3d2159d13dc3a98c0e3a5f8ab91ac3dd2471e52b1d712ea0c1085555"
 dependencies = [
- "futures-util",
- "libc",
- "mio",
- "quinn-proto",
- "socket2",
- "tokio",
+ "bytes",
+ "rand 0.8.5",
+ "ring",
+ "rustc-hash",
+ "rustls 0.20.6",
+ "rustls-native-certs",
+ "slab",
+ "thiserror",
+ "tinyvec",
  "tracing",
+ "webpki 0.22.0",
+]
+
+[[package]]
+name = "quinn-udp"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43f8c8ab02188aa3eac88cdeb2a0b6b78bddc29cb11b3bfe7044b3268fc7ddd0"
+dependencies = [
+ "libc",
+ "quinn-proto 0.9.1",
+ "socket2",
+ "tracing",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]
@@ -5032,7 +5047,7 @@ dependencies = [
  "clap 3.1.8",
  "log",
  "regex",
- "serial_test 0.8.0",
+ "serial_test 0.9.0",
  "solana-download-utils",
  "solana-logger 1.14.6",
  "solana-sdk 1.14.6",
@@ -5201,7 +5216,7 @@ dependencies = [
  "lazy_static",
  "log",
  "quinn",
- "quinn-proto",
+ "quinn-proto 0.8.3",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
  "rayon",
@@ -8246,6 +8261,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows-sys"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
+dependencies = [
+ "windows_aarch64_gnullvm",
+ "windows_aarch64_msvc 0.42.0",
+ "windows_i686_gnu 0.42.0",
+ "windows_i686_msvc 0.42.0",
+ "windows_x86_64_gnu 0.42.0",
+ "windows_x86_64_gnullvm",
+ "windows_x86_64_msvc 0.42.0",
+]
+
+[[package]]
+name = "windows_aarch64_gnullvm"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41d2aa71f6f0cbe00ae5167d90ef3cfe66527d6f613ca78ac8024c3ccab9a19e"
+
+[[package]]
 name = "windows_aarch64_msvc"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8256,6 +8292,12 @@ name = "windows_aarch64_msvc"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8e92753b1c443191654ec532f14c199742964a061be25d77d7a96f09db20bf5"
+
+[[package]]
+name = "windows_aarch64_msvc"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd0f252f5a35cac83d6311b2e795981f5ee6e67eb1f9a7f64eb4500fbc4dcdb4"
 
 [[package]]
 name = "windows_i686_gnu"
@@ -8270,6 +8312,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a711c68811799e017b6038e0922cb27a5e2f43a2ddb609fe0b6f3eeda9de615"
 
 [[package]]
+name = "windows_i686_gnu"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbeae19f6716841636c28d695375df17562ca208b2b7d0dc47635a50ae6c5de7"
+
+[[package]]
 name = "windows_i686_msvc"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8280,6 +8328,12 @@ name = "windows_i686_msvc"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "146c11bb1a02615db74680b32a68e2d61f553cc24c4eb5b4ca10311740e44172"
+
+[[package]]
+name = "windows_i686_msvc"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84c12f65daa39dd2babe6e442988fc329d6243fdce47d7d2d155b8d874862246"
 
 [[package]]
 name = "windows_x86_64_gnu"
@@ -8294,6 +8348,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c912b12f7454c6620635bbff3450962753834be2a594819bd5e945af18ec64bc"
 
 [[package]]
+name = "windows_x86_64_gnu"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf7b1b21b5362cbc318f686150e5bcea75ecedc74dd157d874d754a2ca44b0ed"
+
+[[package]]
+name = "windows_x86_64_gnullvm"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09d525d2ba30eeb3297665bd434a54297e4170c7f1a44cad4ef58095b4cd2028"
+
+[[package]]
 name = "windows_x86_64_msvc"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8304,6 +8370,12 @@ name = "windows_x86_64_msvc"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "504a2476202769977a040c6364301a3f65d0cc9e3fb08600b2bda150a0488316"
+
+[[package]]
+name = "windows_x86_64_msvc"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
 
 [[package]]
 name = "winreg"
