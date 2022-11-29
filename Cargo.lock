@@ -595,9 +595,9 @@ dependencies = [
 
 [[package]]
 name = "bytecount"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72feb31ffc86498dacdbd0fcebb56138e7177a8cc5cea4516031d15ae85a742e"
+checksum = "2c676a478f63e9fa2dd5368a42f28bba0d6c560b775f38583c8bbaa7fcd67c9c"
 
 [[package]]
 name = "bytemuck"
@@ -5032,7 +5032,7 @@ dependencies = [
  "clap 3.1.8",
  "log",
  "regex",
- "serial_test 0.8.0",
+ "serial_test 0.9.0",
  "solana-download-utils",
  "solana-logger 1.14.6",
  "solana-sdk 1.14.6",
