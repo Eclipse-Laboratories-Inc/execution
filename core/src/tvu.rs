@@ -53,6 +53,7 @@ use {
         thread::{self, JoinHandle},
     },
 };
+use solana_entry::entry::EntrySender;
 
 pub struct Tvu {
     fetch_stage: ShredFetchStage,
@@ -129,6 +130,7 @@ impl Tvu {
         accounts_background_request_sender: AbsRequestSender,
         log_messages_bytes_limit: Option<usize>,
         connection_cache: &Arc<ConnectionCache>,
+        entry_sender: Option<EntrySender>,
     ) -> Self {
         let TvuSockets {
             repair: repair_socket,
@@ -237,6 +239,7 @@ impl Tvu {
             ancestor_hashes_replay_update_sender,
             tower_storage: tower_storage.clone(),
             wait_to_vote_slot,
+            entry_sender,
         };
 
         let (voting_sender, voting_receiver) = unbounded();

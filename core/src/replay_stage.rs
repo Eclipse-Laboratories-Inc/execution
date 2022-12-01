@@ -166,6 +166,7 @@ pub struct ReplayStageConfig {
     // Stops voting until this slot has been reached. Should be used to avoid
     // duplicate voting which can lead to slashing.
     pub wait_to_vote_slot: Option<Slot>,
+    pub entry_sender: Option<EntrySender>,
 }
 
 #[derive(Default)]
@@ -425,6 +426,7 @@ impl ReplayStage {
             ancestor_hashes_replay_update_sender,
             tower_storage,
             wait_to_vote_slot,
+            entry_sender,
         } = config;
 
         trace!("replay stage");
@@ -529,7 +531,8 @@ impl ReplayStage {
                         &ancestor_hashes_replay_update_sender,
                         block_metadata_notifier.clone(),
                         &mut replay_timing,
-                        log_messages_bytes_limit
+                        log_messages_bytes_limit,
+                        entry_sender.as_ref(),
                     );
                     replay_active_banks_time.stop();
 

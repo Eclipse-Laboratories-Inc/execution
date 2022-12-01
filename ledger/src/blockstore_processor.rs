@@ -1103,6 +1103,8 @@ pub fn confirm_slot(
     }?;
 
     // TODO: send shred to shred-channel
+    info!("entries send batch");
+
     if let Some(entry_sender) = entry_sender {
         let entries = &slot_entries_load_result.0;
         if let Err(e) = entry_sender.send(entries.clone()) {

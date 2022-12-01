@@ -5607,6 +5607,7 @@ dependencies = [
  "socket2",
  "solana-account-decoder",
  "solana-core",
+ "solana-entry",
  "solana-geyser-plugin-interface",
  "solana-local-cluster",
  "solana-logger 1.14.6",

@@ -962,6 +962,7 @@ fn load_bank_forks(
         None,
         None,
         &AbsRequestSender::default(),
+        None,
     )
     .map(|_| (bank_forks, starting_snapshot_hashes));
 

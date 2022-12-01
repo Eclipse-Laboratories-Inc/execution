@@ -1,5 +1,5 @@
 {
-    "libpath": "/Users/cairo/solana-dev/solana/target/debug/libsolana_geyser_plugin_postgres.dylib",
+    "libpath": "/Users/cairo/solana-dev/settlement/target/debug/libsolana_geyser_plugin_postgres.dylib",
     "host": "127.0.0.1",
     "user": "solana",
     "password": "jw8s0F4",
@@ -13,6 +13,7 @@
     },
     "transaction_selector" : {
         "mentions" : ["*"]
-    }
+    },
+    "entry_selector" : true
 }
 

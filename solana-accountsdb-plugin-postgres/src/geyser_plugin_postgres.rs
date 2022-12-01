@@ -1,4 +1,3 @@
-use serde_json::map::Entry;
 /// Main entry for the PostgreSQL plugin
 use {
     crate::{
@@ -441,6 +440,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
     }
 
     fn notify_entry(&mut self, entry: &Entry) -> Result<()> {
+        info!("foo_notify_entry begin");
         match &mut self.client {
             None => {
                 return Err(GeyserPluginError::Custom(Box::new(
@@ -449,10 +449,11 @@ impl GeyserPlugin for GeyserPluginPostgres {
                     },
                 )));
             }
-            Some(client) => match entry{
+            Some(client) => match entry {
+                _entry => debug!("foo_notify_entry {:?}", _entry),
+                _ => (),
                 // entry to shred
                 // client.append_shred();
-                Ok(()),
             },
         }
 

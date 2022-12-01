@@ -1037,6 +1037,7 @@ impl Validator {
             accounts_background_request_sender,
             config.runtime_config.log_messages_bytes_limit,
             &connection_cache,
+            entry_sender.clone(),
         );
 
         let tpu = Tpu::new(

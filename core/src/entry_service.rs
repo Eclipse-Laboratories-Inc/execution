@@ -27,7 +27,7 @@ impl EntryService {
     ) -> Self {
         let exit = exit.clone();
         let thread_hdl = Builder::new()
-            .name("solCacheBlkTime".to_string())
+            .name("solEntryService".to_string())
             .spawn(move || loop {
                 if exit.load(Ordering::Relaxed) {
                     break;
@@ -35,11 +35,15 @@ impl EntryService {
                 let recv_result = entry_receiver.recv_timeout(Duration::from_secs(1));
                 match recv_result {
                     Err(RecvTimeoutError::Disconnected) => {
+                        debug!("EntryService recv fail");
                         break;
                     }
                     Ok(entries) => {
                         if let Some(entry_notifier) = entry_notifier.as_ref() {
+                            debug!("EntryService recv succ {:?}", &entries);
                             for entry in entries.iter() {
+                                let a = entry_notifier.write().unwrap();
+                                a.notify_entry();
                                 entry_notifier.write().unwrap().notify_entry(entry);
                             }
                         }

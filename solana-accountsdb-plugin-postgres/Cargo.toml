@@ -30,6 +30,7 @@ solana-logger = { path = "../logger", version = "=1.14.6" }
 solana-measure = { path = "../measure", version = "=1.14.6" }
 solana-metrics = { path = "../metrics", version = "=1.14.6" }
 solana-runtime = { path = "../runtime", version = "=1.14.6" }
+solana-entry = { path = "../entry" , version = "=1.14.6"}
 solana-sdk = { path = "../sdk", version = "=1.14.6" }
 solana-transaction-status = { path = "../transaction-status", version = "=1.14.6" }
 thiserror = "1.0.37"
