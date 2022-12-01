@@ -201,6 +201,11 @@ CREATE TABLE spl_token_mint_index (
 CREATE INDEX spl_token_mint_index_mint_key ON spl_token_mint_index (mint_key);
 CREATE UNIQUE INDEX spl_token_mint_index_mint_pair ON spl_token_mint_index (mint_key, account_key);
 
+CREATE TABLE entry (
+    entry BYTEA,
+    updated_on TIMESTAMP NOT NULL
+);
+
 /**
  * The following is for keeping historical data for accounts and is not required for plugin to work.
  */
@@ -236,3 +241,4 @@ $audit_account_update$ LANGUAGE plpgsql;
 
 CREATE TRIGGER account_update_trigger AFTER UPDATE OR DELETE ON account
     FOR EACH ROW EXECUTE PROCEDURE audit_account_update();
+

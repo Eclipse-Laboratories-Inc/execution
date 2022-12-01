@@ -169,7 +169,7 @@ pub enum GeyserPluginError {
 
     /// Error when updating the entry.
     #[error("Error updating entry. Error message: ({msg})")]
-    EntryUpdateError { msg: String }
+    EntryUpdateError { msg: String },
 }
 
 /// The current status of a slot
@@ -233,10 +233,7 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
         Ok(())
     }
 
-    /// Called when all accounts are notified of during startup.
-    fn notify_end_of_startup(&mut self) -> Result<()> {
-        Ok(())
-    }
+
 
     /// Called when a slot status is updated
     #[allow(unused_variables)]
@@ -246,6 +243,11 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
         parent: Option<u64>,
         status: SlotStatus,
     ) -> Result<()> {
+        Ok(())
+    }
+
+    /// Called when all accounts are notified of during startup.
+    fn notify_end_of_startup(&mut self) -> Result<()> {
         Ok(())
     }
 
@@ -265,6 +267,7 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
         Ok(())
     }
 
+    #[allow(unused_variables)]
     fn notify_entry(&mut self, entry: &Entry) -> Result<()> {
         Ok(())
     }

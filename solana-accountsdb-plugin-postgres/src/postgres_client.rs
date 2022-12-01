@@ -3,6 +3,7 @@
 mod postgres_client_account_index;
 mod postgres_client_block_metadata;
 mod postgres_client_transaction;
+mod postgre_client_entry;
 
 /// A concurrent implementation for writing accounts into the PostgreSQL in parallel.
 use {
@@ -35,6 +36,7 @@ use {
     },
     tokio_postgres::types,
 };
+use solana_entry::entry::Entry;
 
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
 /// memory usage. The downside -- calls after this threshold is reached can get blocked.
@@ -60,6 +62,7 @@ struct PostgresSqlClientWrapper {
     insert_token_mint_index_stmt: Option<Statement>,
     bulk_insert_token_owner_index_stmt: Option<Statement>,
     bulk_insert_token_mint_index_stmt: Option<Statement>,
+    log_entry_stmt: Statement,
 }
 
 pub struct SimplePostgresClient {
@@ -232,6 +235,10 @@ pub trait PostgresClient {
         &mut self,
         block_info: UpdateBlockMetadataRequest,
     ) -> Result<(), GeyserPluginError>;
+
+    fn log_entry(
+        &mut self,
+        entry: LogEntryRequest) -> Result<(), GeyserPluginError>;
 }
 
 impl SimplePostgresClient {
@@ -781,6 +788,8 @@ impl SimplePostgresClient {
             Self::build_transaction_info_upsert_statement(&mut client, config)?;
         let update_block_metadata_stmt =
             Self::build_block_metadata_upsert_statement(&mut client, config)?;
+        let log_entry_stmt =
+            Self::build_entry_upsert_statement(&mut client, config)?;
 
         let batch_size = config
             .batch_size
@@ -846,6 +855,7 @@ impl SimplePostgresClient {
                 insert_token_mint_index_stmt,
                 bulk_insert_token_owner_index_stmt,
                 bulk_insert_token_mint_index_stmt,
+                log_entry_stmt,
             }),
             index_token_owner: config.index_token_owner.unwrap_or_default(),
             index_token_mint: config.index_token_mint.unwrap_or(false),
@@ -935,6 +945,10 @@ impl PostgresClient for SimplePostgresClient {
     ) -> Result<(), GeyserPluginError> {
         self.update_block_metadata_impl(block_info)
     }
+
+    fn log_entry(&mut self, entry: LogEntryRequest) -> Result<(), GeyserPluginError> {
+        self.log_entry_impl(entry)
+    }
 }
 
 struct UpdateAccountRequest {
@@ -952,12 +966,17 @@ pub struct UpdateBlockMetadataRequest {
     pub block_info: DbBlockInfo,
 }
 
+pub struct LogEntryRequest {
+    pub entry: Entry,
+}
+
 #[warn(clippy::large_enum_variant)]
 enum DbWorkItem {
     UpdateAccount(Box<UpdateAccountRequest>),
     UpdateSlot(Box<UpdateSlotRequest>),
     LogTransaction(Box<LogTransactionRequest>),
     UpdateBlockMetadata(Box<UpdateBlockMetadataRequest>),
+    LogEntry(Box<LogEntryRequest>),
 }
 
 impl PostgresClientWorker {
@@ -1029,6 +1048,14 @@ impl PostgresClientWorker {
                     DbWorkItem::UpdateBlockMetadata(block_info) => {
                         if let Err(err) = self.client.update_block_metadata(*block_info) {
                             error!("Failed to update block metadata: ({})", err);
+                            if panic_on_db_errors {
+                                abort();
+                            }
+                        }
+                    }
+                    DbWorkItem::LogEntry(entry) => {
+                        if let Err(err) = self.client.log_entry(*entry) {
+                            error!("Failed to log entry : ({})", err);
                             if panic_on_db_errors {
                                 abort();
                             }
@@ -1227,6 +1254,19 @@ impl ParallelPostgresClient {
         {
             return Err(GeyserPluginError::SlotStatusUpdateError {
                 msg: format!("Failed to update the slot {:?}, error: {:?}", slot, err),
+            });
+        }
+        Ok(())
+    }
+
+    pub fn log_entry(&mut self, entry: &Entry) -> Result<(), GeyserPluginError> {
+        if let Err(err) = self.sender.send(
+            DbWorkItem::LogEntry(Box::new(LogEntryRequest {entry: entry.clone()}))) {
+            return Err(GeyserPluginError::EntryUpdateError{
+                msg: format!(
+                    "Failed to update the entry , error: {:?}",
+                    err
+                )
             });
         }
         Ok(())

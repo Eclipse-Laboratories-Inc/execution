@@ -440,7 +440,6 @@ impl GeyserPlugin for GeyserPluginPostgres {
     }
 
     fn notify_entry(&mut self, entry: &Entry) -> Result<()> {
-        info!("foo_notify_entry begin");
         match &mut self.client {
             None => {
                 return Err(GeyserPluginError::Custom(Box::new(
@@ -449,11 +448,13 @@ impl GeyserPlugin for GeyserPluginPostgres {
                     },
                 )));
             }
-            Some(client) => match entry {
-                _entry => debug!("foo_notify_entry {:?}", _entry),
-                _ => (),
-                // entry to shred
-                // client.append_shred();
+            Some(client) => {
+                let result = client.log_entry(entry);
+                if let Err(err) = result {
+                    return Err(GeyserPluginError::EntryUpdateError {
+                        msg: format!("Failed to persist entry to the PostgreSQL database. Error: {:?}", err)
+                    });
+                }
             },
         }
 

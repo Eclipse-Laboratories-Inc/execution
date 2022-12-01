@@ -42,8 +42,6 @@ impl EntryService {
                         if let Some(entry_notifier) = entry_notifier.as_ref() {
                             debug!("EntryService recv succ {:?}", &entries);
                             for entry in entries.iter() {
-                                let a = entry_notifier.write().unwrap();
-                                a.notify_entry();
                                 entry_notifier.write().unwrap().notify_entry(entry);
                             }
                         }

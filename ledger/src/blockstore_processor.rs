@@ -1102,8 +1102,7 @@ pub fn confirm_slot(
         load_result
     }?;
 
-    // TODO: send shred to shred-channel
-    info!("entries send batch");
+    // TODO: send entry to channel
 
     if let Some(entry_sender) = entry_sender {
         let entries = &slot_entries_load_result.0;

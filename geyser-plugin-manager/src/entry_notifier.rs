@@ -19,6 +19,9 @@ impl EntryNotifier for EntryNotifierImpl {
             return;
         }
         for plugin in plugin_manager.plugins.iter_mut() {
+            if !plugin.entry_notifications_enabled() {
+                continue;
+            }
             match plugin.notify_entry(entry) {
                 Err(err) => {
                     error!(
