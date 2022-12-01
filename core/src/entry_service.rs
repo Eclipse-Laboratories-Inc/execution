@@ -1,7 +1,5 @@
-use solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock;
 use {
     crossbeam_channel::{Receiver, RecvTimeoutError},
-    solana_entry::entry::EntryReceiver,
     solana_ledger::blockstore::Blockstore,
     solana_measure::measure::Measure,
     std::{
@@ -12,7 +10,9 @@ use {
         thread::{self, Builder, JoinHandle},
         time::Duration,
     },
+    solana_entry::entry::EntryReceiver,
 };
+use solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock;
 
 pub struct EntryService {
     thread_hdl: JoinHandle<()>,

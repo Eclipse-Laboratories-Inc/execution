@@ -82,6 +82,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_entry::entry::EntrySender;
 
 pub const MAX_ENTRY_RECV_PER_ITER: usize = 512;
 pub const SUPERMINORITY_THRESHOLD: f64 = 1f64 / 3f64;
@@ -1713,6 +1714,7 @@ impl ReplayStage {
         replay_vote_sender: &ReplayVoteSender,
         verify_recyclers: &VerifyRecyclers,
         log_messages_bytes_limit: Option<usize>,
+        entry_sender: Option<&EntrySender> ,
     ) -> result::Result<usize, BlockstoreProcessorError> {
         let mut w_replay_stats = replay_stats.write().unwrap();
         let mut w_replay_progress = replay_progress.write().unwrap();
@@ -1732,6 +1734,7 @@ impl ReplayStage {
             verify_recyclers,
             false,
             log_messages_bytes_limit,
+            entry_sender,
         )?;
         let tx_count_after = w_replay_progress.num_txs;
         let tx_count = tx_count_after - tx_count_before;
@@ -2228,6 +2231,7 @@ impl ReplayStage {
         replay_timing: &mut ReplayTiming,
         log_messages_bytes_limit: Option<usize>,
         active_bank_slots: &[Slot],
+        entry_sender: Option<&EntrySender>,
     ) -> Vec<ReplaySlotFromBlockstore> {
         // Make mutable shared structures thread safe.
         let progress = RwLock::new(progress);
@@ -2303,6 +2307,7 @@ impl ReplayStage {
                             &replay_vote_sender.clone(),
                             &verify_recyclers.clone(),
                             log_messages_bytes_limit,
+                            entry_sender,
                         );
                         replay_blockstore_time.stop();
                         replay_result.replay_result = Some(blockstore_result);
@@ -2333,6 +2338,7 @@ impl ReplayStage {
         replay_timing: &mut ReplayTiming,
         log_messages_bytes_limit: Option<usize>,
         bank_slot: Slot,
+        entry_sender: Option<&EntrySender>,
     ) -> ReplaySlotFromBlockstore {
         let mut replay_result = ReplaySlotFromBlockstore {
             is_slot_dead: false,
@@ -2382,6 +2388,7 @@ impl ReplayStage {
                     &replay_vote_sender.clone(),
                     &verify_recyclers.clone(),
                     log_messages_bytes_limit,
+                    entry_sender,
                 );
                 replay_blockstore_time.stop();
                 replay_result.replay_result = Some(blockstore_result);
@@ -2602,6 +2609,7 @@ impl ReplayStage {
         block_metadata_notifier: Option<BlockMetadataNotifierLock>,
         replay_timing: &mut ReplayTiming,
         log_messages_bytes_limit: Option<usize>,
+        entry_sender: Option<&EntrySender>,
     ) -> bool {
         let active_bank_slots = bank_forks.read().unwrap().active_bank_slots();
         let num_active_banks = active_bank_slots.len();
@@ -2631,6 +2639,7 @@ impl ReplayStage {
                         replay_timing,
                         log_messages_bytes_limit,
                         &active_bank_slots,
+                        entry_sender,
                     )
                 } else {
                     active_bank_slots
@@ -2648,6 +2657,7 @@ impl ReplayStage {
                                 replay_timing,
                                 log_messages_bytes_limit,
                                 *bank_slot,
+                                entry_sender,
                             )
                         })
                         .collect()
@@ -2665,6 +2675,7 @@ impl ReplayStage {
                     replay_timing,
                     log_messages_bytes_limit,
                     active_bank_slots[0],
+                    entry_sender,
                 )]
             };
 
@@ -4226,6 +4237,7 @@ pub(crate) mod tests {
                 None,
                 &replay_vote_sender,
                 &VerifyRecyclers::default(),
+                None,
                 None,
             );
             let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());

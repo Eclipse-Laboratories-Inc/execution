@@ -24,7 +24,6 @@ pub mod consensus;
 pub mod cost_update_service;
 pub mod drop_bank_service;
 pub mod duplicate_repair_status;
-pub mod entry_service;
 pub mod fetch_stage;
 pub mod find_packet_sender_stake_stage;
 pub mod fork_choice;
@@ -81,6 +80,7 @@ pub mod vote_stake_tracker;
 pub mod voting_service;
 pub mod warm_quic_cache_service;
 pub mod window_service;
+pub mod entry_service;
 
 #[macro_use]
 extern crate eager;
