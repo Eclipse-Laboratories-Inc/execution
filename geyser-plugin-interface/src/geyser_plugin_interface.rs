@@ -3,9 +3,9 @@
 /// In addition, the dynamic library must export a "C" function _create_plugin which
 /// creates the implementation of the plugin.
 use {
+    solana_entry::entry::Entry,
     solana_sdk::{clock::UnixTimestamp, signature::Signature, transaction::SanitizedTransaction},
     solana_transaction_status::{Reward, TransactionStatusMeta},
-    solana_entry::entry::Entry,
     std::{any::Any, error, io},
     thiserror::Error,
 };
@@ -169,7 +169,7 @@ pub enum GeyserPluginError {
 
     /// Error when updating the entry.
     #[error("Error updating entry. Error message: ({msg})")]
-    EntryUpdateError { msg: String }
+    EntryUpdateError { msg: String },
 }
 
 /// The current status of a slot
@@ -283,5 +283,7 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
         false
     }
 
-    fn entry_notifications_enabled(&self) -> bool { true }
+    fn entry_notifications_enabled(&self) -> bool {
+        true
+    }
 }

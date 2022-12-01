@@ -3,9 +3,9 @@ use {
         accounts_update_notifier::AccountsUpdateNotifierImpl,
         block_metadata_notifier::BlockMetadataNotifierImpl,
         block_metadata_notifier_interface::BlockMetadataNotifierLock,
+        entry_notifier::EntryNotifierImpl, entry_notifier_interface::EntryNotifierLock,
         geyser_plugin_manager::GeyserPluginManager, slot_status_notifier::SlotStatusNotifierImpl,
         slot_status_observer::SlotStatusObserver, transaction_notifier::TransactionNotifierImpl,
-        entry_notifier::EntryNotifierImpl, entry_notifier_interface::EntryNotifierLock,
     },
     crossbeam_channel::Receiver,
     log::*,
@@ -106,13 +106,12 @@ impl GeyserPluginService {
                 None
             };
 
-        let entry_notifier: Option<EntryNotifierLock> =
-            if entry_notifications_enabled {
-                let entry_notifier = EntryNotifierImpl::new(plugin_manager.clone());
-                Some(Arc::new(RwLock::new(entry_notifier)))
-            } else {
-                None
-            };
+        let entry_notifier: Option<EntryNotifierLock> = if entry_notifications_enabled {
+            let entry_notifier = EntryNotifierImpl::new(plugin_manager.clone());
+            Some(Arc::new(RwLock::new(entry_notifier)))
+        } else {
+            None
+        };
 
         let (slot_status_observer, block_metadata_notifier): (
             Option<SlotStatusObserver>,

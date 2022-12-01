@@ -1,3 +1,4 @@
+use solana_entry::entry::EntrySender;
 use {
     crate::{
         block_error::BlockError, blockstore::Blockstore, blockstore_db::BlockstoreError,
@@ -61,7 +62,6 @@ use {
     },
     thiserror::Error,
 };
-use solana_entry::entry::EntrySender;
 
 // it tracks the block cost available capacity - number of compute-units allowed
 // by max block cost limit.

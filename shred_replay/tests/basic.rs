@@ -15,7 +15,6 @@ use {
     },
 };
 
-
 fn insert_test_shreds(ledger_path: &Path, ending_slot: u64) {
     let blockstore = Blockstore::open(ledger_path).unwrap();
     for i in 1..ending_slot {
@@ -62,19 +61,11 @@ fn ledger_tool_copy_test(src_shred_compaction: &str, dst_shred_compaction: &str)
     let target_ledger_path = target_ledger_path.path().to_str().unwrap();
 
     // solana-ledger-tool verify
-    let output = run_ledger_tool(&[
-        "-l",
-        ledger_path,
-        "verify",
-    ]);
+    let output = run_ledger_tool(&["-l", ledger_path, "verify"]);
     assert!(output.status.success());
 
     // solana-ledger-tool -l <ledger> bank-hash
-    let output = run_ledger_tool(&[
-        "-l",
-        ledger_path,
-        "bank-hash",
-    ]);
+    let output = run_ledger_tool(&["-l", ledger_path, "bank-hash"]);
     assert!(output.status.success());
     let _bank_hash_str = String::from_utf8_lossy(&output.stdout);
 

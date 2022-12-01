@@ -1,7 +1,5 @@
 use {
-    crate::{
-        geyser_plugin_manager::GeyserPluginManager, entry_notifier_interface::EntryNotifier
-    },
+    crate::{entry_notifier_interface::EntryNotifier, geyser_plugin_manager::GeyserPluginManager},
     log::*,
     solana_entry::entry::Entry,
     solana_measure::measure::Measure,
@@ -30,14 +28,10 @@ impl EntryNotifier for EntryNotifierImpl {
                     )
                 }
                 Ok(_) => {
-                    trace!(
-                        "Successfully updated shred to plugin {}",
-                        plugin.name()
-                    );
+                    trace!("Successfully updated shred to plugin {}", plugin.name());
                 }
             }
         }
-
     }
 }
 

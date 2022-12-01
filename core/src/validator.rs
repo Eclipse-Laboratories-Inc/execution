@@ -9,6 +9,7 @@ use {
         cluster_info_vote_listener::VoteTracker,
         completed_data_sets_service::CompletedDataSetsService,
         consensus::{reconcile_blockstore_roots_with_external_source, ExternalRootSource, Tower},
+        entry_service::EntryService,
         ledger_metric_report_service::LedgerMetricReportService,
         poh_timing_report_service::PohTimingReportService,
         rewards_recorder_service::{RewardsRecorderSender, RewardsRecorderService},
@@ -22,12 +23,13 @@ use {
         tower_storage::TowerStorage,
         tpu::{Tpu, TpuSockets, DEFAULT_TPU_COALESCE_MS},
         tvu::{Tvu, TvuConfig, TvuSockets},
-        entry_service::EntryService,
     },
     crossbeam_channel::{bounded, unbounded, Receiver},
     rand::{thread_rng, Rng},
     solana_client::connection_cache::ConnectionCache,
+    solana_entry::entry::{EntryReceiver, EntrySender},
     solana_entry::poh::compute_hash_time_ns,
+    solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
     solana_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
     solana_gossip::{
         cluster_info::{
@@ -112,8 +114,6 @@ use {
         thread::{sleep, Builder, JoinHandle},
         time::{Duration, Instant},
     },
-    solana_entry::entry::{EntrySender, EntryReceiver},
-    solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
 };
 
 const MAX_COMPLETED_DATA_SETS_IN_CHANNEL: usize = 100_000;
@@ -341,7 +341,6 @@ struct EntryServices {
     entry_service: Option<EntryService>,
 }
 
-
 pub struct Validator {
     validator_exit: Arc<RwLock<Exit>>,
     json_rpc_service: Option<JsonRpcService>,
@@ -562,7 +561,7 @@ impl Validator {
                 cache_block_meta_sender,
                 cache_block_meta_service,
             },
-            EntryServices{
+            EntryServices {
                 entry_sender,
                 entry_service,
             },
@@ -1111,7 +1110,7 @@ impl Validator {
             ledger_metric_report_service,
             accounts_background_service,
             accounts_hash_verifier,
-            entry_service
+            entry_service,
         }
     }
 
@@ -1199,9 +1198,7 @@ impl Validator {
         }
 
         if let Some(entry_service) = self.entry_service {
-            entry_service
-                .join()
-                .expect("entry_service");
+            entry_service.join().expect("entry_service");
         }
 
         if let Some(system_monitor_service) = self.system_monitor_service {
@@ -1502,15 +1499,11 @@ fn load_blockstore(
         };
 
     let is_plugin_entry_required = entry_notifier.as_ref().is_some();
-    let entry_services =
-        if is_plugin_entry_required {
-            initialize_entry_services(
-                exit,
-                entry_notifier,
-            )
-        } else {
-            EntryServices::default()
-        };
+    let entry_services = if is_plugin_entry_required {
+        initialize_entry_services(exit, entry_notifier)
+    } else {
+        EntryServices::default()
+    };
 
     let (bank_forks, mut leader_schedule_cache, starting_snapshot_hashes) =
         bank_forks_utils::load_bank_forks(
@@ -1911,11 +1904,7 @@ fn initialize_entry_services(
 ) -> EntryServices {
     let (entry_sender, entry_receiver) = unbounded();
     let entry_sender = Some(entry_sender);
-    let entry_service = Some(EntryService::new(
-        entry_receiver,
-        entry_notifier,
-        exit,
-    ));
+    let entry_service = Some(EntryService::new(entry_receiver, entry_notifier, exit));
     EntryServices {
         entry_sender,
         entry_service,
