@@ -5609,6 +5609,7 @@ dependencies = [
  "solana-core",
  "solana-entry",
  "solana-geyser-plugin-interface",
+ "solana-ledger",
  "solana-local-cluster",
  "solana-logger 1.14.6",
  "solana-measure",

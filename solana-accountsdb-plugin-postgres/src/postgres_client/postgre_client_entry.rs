@@ -11,7 +11,8 @@ use {
     chrono::Utc,
     log::*,
     postgres::{Client, Statement},
-    solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError
+    solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
+    solana_ledger::blockstore
 };
 
 impl SimplePostgresClient {
@@ -20,8 +21,8 @@ impl SimplePostgresClient {
         config: &GeyserPluginPostgresConfig,
     ) -> Result<Statement, GeyserPluginError> {
         let stmt =
-            "INSERT INTO entry (entry, entry_index, slot, parent_slot, is_full_slot, updated_on) \
-        VALUES ($1, $2, $3, $4, $5, $6)";
+            "INSERT INTO entry (slot, parent_slot, entry_index, entry, num_shreds, is_full_slot, updated_on) \
+        VALUES ($1, $2, $3, $4, $5, $6, $7)";
 
         let stmt = client.prepare(stmt);
 
@@ -47,24 +48,30 @@ impl SimplePostgresClient {
         let client = &mut client.client;
 
         let updated_on = Utc::now().naive_utc();
-        let bin:&[u8] = &vec![1,2,3] ;
 
+        // TODO: entry to shred
         let entry = &entry.entry;
         let entries = &entry.entries;
 
-        for entry_tuple in entries.iter().enumerate() {
+        let (slot, parent_slot, is_full_slot) = (entry.slot, entry.parent_slot, entry.is_full_slot);
+        let (version, merkle_variant) = (0, true);
+
+        let shreds = blockstore::entries_to_test_shreds(
+            &entries, slot, parent_slot, is_full_slot, version, merkle_variant,
+        );
+
+        for (index, shred) in shreds.iter().enumerate() {
             let result = client.execute(
                 statement,
                 &[
-                    &bin,
-                    &(entry_tuple.0 as i64),
-                    &(entry.slot as i64),
-                    &(entry.parent_slot as i64),
+                    &(slot as i64),
+                    &(parent_slot as i64),
+                    &(index as i64),
+                    &shred.payload(),
                     &(entry.num_shreds as i64),
-                    &entry.is_full_slot,
+                    &is_full_slot,
                     &updated_on]
             );
-
             if let Err(err) = result {
                 let msg = format!(
                     "Failed to persist entry/shred to the PostgreSQL database. Error: {:?}",

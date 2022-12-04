@@ -202,14 +202,16 @@ CREATE INDEX spl_token_mint_index_mint_key ON spl_token_mint_index (mint_key);
 CREATE UNIQUE INDEX spl_token_mint_index_mint_pair ON spl_token_mint_index (mint_key, account_key);
 
 CREATE TABLE entry (
-    entry BYTEA,
-    entry_index BIGINT NOT NULL,
     slot BIGINT NOT NULL,
     parent_slot BIGINT NOT NULL,
+    entry_index BIGINT NOT NULL,
+    entry BYTEA,
     num_shreds BIGINT NOT NULL,
     is_full_slot BOOL NOT NULL,
     updated_on TIMESTAMP NOT NULL
 );
+
+CREATE INDEX entry_slot_index ON entry (slot, entry_index);
 
 /**
  * The following is for keeping historical data for accounts and is not required for plugin to work.
