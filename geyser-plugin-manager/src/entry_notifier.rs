@@ -2,8 +2,8 @@ use {
     crate::{entry_notifier_interface::EntryNotifier, geyser_plugin_manager::GeyserPluginManager},
     log::*,
     solana_entry::entry::UntrustedEntry,
-    solana_measure::measure::Measure,
-    solana_metrics::*,
+    // solana_measure::measure::Measure,
+    // solana_metrics::*,
     std::sync::{Arc, RwLock},
 };
 

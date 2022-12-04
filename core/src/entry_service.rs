@@ -1,7 +1,6 @@
 use {
-    crossbeam_channel::{Receiver, RecvTimeoutError},
-    solana_ledger::blockstore::Blockstore,
-    solana_measure::measure::Measure,
+    crossbeam_channel::{RecvTimeoutError},
+    // solana_measure::measure::Measure,
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},

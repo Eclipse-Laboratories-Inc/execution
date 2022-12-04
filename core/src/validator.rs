@@ -112,7 +112,7 @@ use {
         thread::{sleep, Builder, JoinHandle},
         time::{Duration, Instant},
     },
-    solana_entry::entry::{EntrySender, EntryReceiver},
+    solana_entry::entry::{EntrySender},
     solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
 };
 
