@@ -35,15 +35,13 @@ impl EntryService {
                 let recv_result = entry_receiver.recv_timeout(Duration::from_secs(1));
                 match recv_result {
                     Err(RecvTimeoutError::Disconnected) => {
-                        debug!("EntryService recv fail");
+                        trace!("EntryService recv fail");
                         break;
                     }
-                    Ok(entries) => {
+                    Ok(untrusted_entry) => {
                         if let Some(entry_notifier) = entry_notifier.as_ref() {
-                            debug!("EntryService recv succ {:?}", &entries);
-                            for entry in entries.iter() {
-                                entry_notifier.write().unwrap().notify_entry(entry);
-                            }
+                            trace!("EntryService recv succ");
+                            entry_notifier.write().unwrap().notify_entry(&untrusted_entry);
                         }
                     }
                     _ => {}

@@ -51,8 +51,16 @@ lazy_static! {
         .unwrap();
 }
 
-pub type EntrySender = Sender<Vec<Entry>>;
-pub type EntryReceiver = Receiver<Vec<Entry>>;
+pub struct UntrustedEntry {
+    pub entries: Vec<Entry>,
+    pub slot: u64,
+    pub parent_slot: u64,
+    pub num_shreds: u64,
+    pub is_full_slot: bool
+}
+
+pub type EntrySender = Sender<UntrustedEntry>;
+pub type EntryReceiver = Receiver<UntrustedEntry>;
 
 static mut API: Option<Container<Api>> = None;
 

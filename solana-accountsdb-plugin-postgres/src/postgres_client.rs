@@ -25,6 +25,7 @@ use {
     solana_measure::measure::Measure,
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
+    solana_entry::entry::UntrustedEntry,
     std::{
         collections::HashSet,
         sync::{
@@ -36,7 +37,6 @@ use {
     },
     tokio_postgres::types,
 };
-use solana_entry::entry::Entry;
 
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
 /// memory usage. The downside -- calls after this threshold is reached can get blocked.
@@ -967,7 +967,7 @@ pub struct UpdateBlockMetadataRequest {
 }
 
 pub struct LogEntryRequest {
-    pub entry: Entry,
+    pub entry: UntrustedEntry,
 }
 
 #[warn(clippy::large_enum_variant)]
@@ -1259,10 +1259,17 @@ impl ParallelPostgresClient {
         Ok(())
     }
 
-    pub fn log_entry(&mut self, entry: &Entry) -> Result<(), GeyserPluginError> {
+    pub fn log_entry(&mut self, entry: &UntrustedEntry) -> Result<(), GeyserPluginError> {
+        let entry = UntrustedEntry {
+            entries: entry.entries.clone(),
+            slot: entry.slot,
+            parent_slot: entry.parent_slot,
+            num_shreds: entry.num_shreds,
+            is_full_slot: entry.is_full_slot
+        };
         if let Err(err) = self.sender.send(
-            DbWorkItem::LogEntry(Box::new(LogEntryRequest {entry: entry.clone()}))) {
-            return Err(GeyserPluginError::EntryUpdateError{
+            DbWorkItem::LogEntry(Box::new(LogEntryRequest {entry}))) {
+            return Err(GeyserPluginError::EntryUpdateError {
                 msg: format!(
                     "Failed to update the entry , error: {:?}",
                     err

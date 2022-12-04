@@ -20,8 +20,8 @@ impl SimplePostgresClient {
         config: &GeyserPluginPostgresConfig,
     ) -> Result<Statement, GeyserPluginError> {
         let stmt =
-            "INSERT INTO entry (entry, updated_on) \
-        VALUES ($1, $2)";
+            "INSERT INTO entry (entry, entry_index, slot, parent_slot, is_full_slot, updated_on) \
+        VALUES ($1, $2, $3, $4, $5, $6)";
 
         let stmt = client.prepare(stmt);
 
@@ -45,19 +45,34 @@ impl SimplePostgresClient {
         let client = self.client.get_mut().unwrap();
         let statement = &client.log_entry_stmt;
         let client = &mut client.client;
+
         let updated_on = Utc::now().naive_utc();
         let bin:&[u8] = &vec![1,2,3] ;
-        let result = client.execute(
-            statement,
-           &[&bin, &updated_on]
-        );
 
-        if let Err(err) = result {
-            let msg = format!(
-                "Failed to persist entry/shred to the PostgreSQL database. Error: {:?}",
-                err);
-            error!("{}", msg);
-            return Err(GeyserPluginError::EntryUpdateError {msg});
+        let entry = &entry.entry;
+        let entries = &entry.entries;
+
+        for entry_tuple in entries.iter().enumerate() {
+            let result = client.execute(
+                statement,
+                &[
+                    &bin,
+                    &(entry_tuple.0 as i64),
+                    &(entry.slot as i64),
+                    &(entry.parent_slot as i64),
+                    &(entry.num_shreds as i64),
+                    &entry.is_full_slot,
+                    &updated_on]
+            );
+
+            if let Err(err) = result {
+                let msg = format!(
+                    "Failed to persist entry/shred to the PostgreSQL database. Error: {:?}",
+                    err);
+                error!("{}", msg);
+                return Err(GeyserPluginError::EntryUpdateError {msg});
+            }
+
         }
 
         Ok(())

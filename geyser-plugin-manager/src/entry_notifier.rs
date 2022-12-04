@@ -1,7 +1,7 @@
 use {
     crate::{entry_notifier_interface::EntryNotifier, geyser_plugin_manager::GeyserPluginManager},
     log::*,
-    solana_entry::entry::Entry,
+    solana_entry::entry::UntrustedEntry,
     solana_measure::measure::Measure,
     solana_metrics::*,
     std::sync::{Arc, RwLock},
@@ -13,7 +13,7 @@ pub(crate) struct EntryNotifierImpl {
 
 impl EntryNotifier for EntryNotifierImpl {
     /// Notify the entry
-    fn notify_entry(&self, entry: &Entry) {
+    fn notify_entry(&self, entry: &UntrustedEntry) {
         let mut plugin_manager = self.plugin_manager.write().unwrap();
         if plugin_manager.plugins.is_empty() {
             return;

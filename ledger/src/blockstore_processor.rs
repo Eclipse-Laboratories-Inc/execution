@@ -12,6 +12,7 @@ use {
     rayon::{prelude::*, ThreadPool},
     solana_entry::entry::{
         self, create_ticks, Entry, EntrySlice, EntryType, EntryVerificationStatus, VerifyRecyclers,
+        EntrySender, UntrustedEntry
     },
     solana_measure::{measure, measure::Measure},
     solana_metrics::{datapoint_error, inc_new_counter_debug},
@@ -61,7 +62,7 @@ use {
     },
     thiserror::Error,
 };
-use solana_entry::entry::EntrySender;
+
 
 // it tracks the block cost available capacity - number of compute-units allowed
 // by max block cost limit.
@@ -1102,11 +1103,19 @@ pub fn confirm_slot(
         load_result
     }?;
 
-    // TODO: send entry to channel
+    // send (entries, num_shreds, slot, parent_slot, is_full_slot) to channel
+    // so that *geyser-plugin*.so will received and notify it to Kafka/PostgresSQL DB
 
     if let Some(entry_sender) = entry_sender {
-        let entries = &slot_entries_load_result.0;
-        if let Err(e) = entry_sender.send(entries.clone()) {
+        if let Err(e) = entry_sender.send(
+            UntrustedEntry {
+                entries: slot_entries_load_result.0.clone(),
+                num_shreds: slot_entries_load_result.1,
+                slot: slot,
+                parent_slot: bank.parent_slot(),
+                is_full_slot: slot_entries_load_result.2}
+        )
+        {
             trace!(
                 "entries send batch failed: {:?}",
                 e

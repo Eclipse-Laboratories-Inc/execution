@@ -203,6 +203,11 @@ CREATE UNIQUE INDEX spl_token_mint_index_mint_pair ON spl_token_mint_index (mint
 
 CREATE TABLE entry (
     entry BYTEA,
+    entry_index BIGINT NOT NULL,
+    slot BIGINT NOT NULL,
+    parent_slot BIGINT NOT NULL,
+    num_shreds BIGINT NOT NULL,
+    is_full_slot BOOL NOT NULL,
     updated_on TIMESTAMP NOT NULL
 );
 

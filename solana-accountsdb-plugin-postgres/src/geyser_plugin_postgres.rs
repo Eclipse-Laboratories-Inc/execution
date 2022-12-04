@@ -14,7 +14,7 @@ use {
         GeyserPlugin, GeyserPluginError, ReplicaAccountInfoVersions, ReplicaBlockInfoVersions,
         ReplicaTransactionInfoVersions, Result, SlotStatus,
     },
-    solana_entry::entry::Entry,
+    solana_entry::entry::UntrustedEntry,
     solana_measure::measure::Measure,
     solana_metrics::*,
     std::{fs::File, io::Read},
@@ -439,7 +439,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
         Ok(())
     }
 
-    fn notify_entry(&mut self, entry: &Entry) -> Result<()> {
+    fn notify_entry(&mut self, entry: &UntrustedEntry) -> Result<()> {
         match &mut self.client {
             None => {
                 return Err(GeyserPluginError::Custom(Box::new(

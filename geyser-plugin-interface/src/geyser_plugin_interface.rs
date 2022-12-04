@@ -5,7 +5,7 @@
 use {
     solana_sdk::{clock::UnixTimestamp, signature::Signature, transaction::SanitizedTransaction},
     solana_transaction_status::{Reward, TransactionStatusMeta},
-    solana_entry::entry::Entry,
+    solana_entry::entry::UntrustedEntry,
     std::{any::Any, error, io},
     thiserror::Error,
 };
@@ -268,7 +268,7 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
     }
 
     #[allow(unused_variables)]
-    fn notify_entry(&mut self, entry: &Entry) -> Result<()> {
+    fn notify_entry(&mut self, entry: &UntrustedEntry) -> Result<()> {
         Ok(())
     }
 
