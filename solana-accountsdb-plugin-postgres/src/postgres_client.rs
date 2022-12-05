@@ -946,8 +946,8 @@ impl PostgresClient for SimplePostgresClient {
         self.update_block_metadata_impl(block_info)
     }
 
-    fn log_entry(&mut self, entry: LogEntryRequest) -> Result<(), GeyserPluginError> {
-        self.log_entry_impl(entry)
+    fn log_entry(&mut self, log_entry_request: LogEntryRequest) -> Result<(), GeyserPluginError> {
+        self.log_entry_impl(log_entry_request)
     }
 }
 
@@ -1264,7 +1264,6 @@ impl ParallelPostgresClient {
             entries: entry.entries.clone(),
             slot: entry.slot,
             parent_slot: entry.parent_slot,
-            num_shreds: entry.num_shreds,
             is_full_slot: entry.is_full_slot
         };
         if let Err(err) = self.sender.send(

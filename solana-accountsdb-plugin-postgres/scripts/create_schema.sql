@@ -206,7 +206,6 @@ CREATE TABLE entry (
     parent_slot BIGINT NOT NULL,
     entry_index BIGINT NOT NULL,
     entry BYTEA,
-    num_shreds BIGINT NOT NULL,
     is_full_slot BOOL NOT NULL,
     updated_on TIMESTAMP NOT NULL
 );

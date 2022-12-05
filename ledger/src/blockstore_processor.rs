@@ -1103,23 +1103,18 @@ pub fn confirm_slot(
         load_result
     }?;
 
-    // send (entries, num_shreds, slot, parent_slot, is_full_slot) to channel
+    // send (entries, slot, parent_slot, is_full_slot) to channel
     // so that *geyser-plugin*.so will received and notify it to Kafka/PostgresSQL DB
 
     if let Some(entry_sender) = entry_sender {
         if let Err(e) = entry_sender.send(
             UntrustedEntry {
                 entries: slot_entries_load_result.0.clone(),
-                num_shreds: slot_entries_load_result.1,
                 slot: slot,
                 parent_slot: bank.parent_slot(),
                 is_full_slot: slot_entries_load_result.2}
-        )
-        {
-            trace!(
-                "entries send batch failed: {:?}",
-                e
-            );
+        ) {
+            trace!("entries send batch failed: {:?}", e);
         }
     }
 

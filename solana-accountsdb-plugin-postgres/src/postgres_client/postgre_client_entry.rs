@@ -21,8 +21,8 @@ impl SimplePostgresClient {
         config: &GeyserPluginPostgresConfig,
     ) -> Result<Statement, GeyserPluginError> {
         let stmt =
-            "INSERT INTO entry (slot, parent_slot, entry_index, entry, num_shreds, is_full_slot, updated_on) \
-        VALUES ($1, $2, $3, $4, $5, $6, $7)";
+            "INSERT INTO entry (slot, parent_slot, entry_index, entry, is_full_slot, updated_on) \
+        VALUES ($1, $2, $3, $4, $5, $6)";
 
         let stmt = client.prepare(stmt);
 
@@ -41,7 +41,7 @@ impl SimplePostgresClient {
 
     pub(crate) fn log_entry_impl(
         &mut self,
-        entry: LogEntryRequest,
+        log_entry_request: LogEntryRequest,
     ) -> Result<(), GeyserPluginError> {
         let client = self.client.get_mut().unwrap();
         let statement = &client.log_entry_stmt;
@@ -49,8 +49,8 @@ impl SimplePostgresClient {
 
         let updated_on = Utc::now().naive_utc();
 
-        // TODO: entry to shred
-        let entry = &entry.entry;
+        // entry to shred, 64 entry ~= 8 shred
+        let entry = &log_entry_request.entry;
         let entries = &entry.entries;
 
         let (slot, parent_slot, is_full_slot) = (entry.slot, entry.parent_slot, entry.is_full_slot);
@@ -68,7 +68,6 @@ impl SimplePostgresClient {
                     &(parent_slot as i64),
                     &(index as i64),
                     &shred.payload(),
-                    &(entry.num_shreds as i64),
                     &is_full_slot,
                     &updated_on]
             );

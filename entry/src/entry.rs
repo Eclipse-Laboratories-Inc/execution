@@ -55,7 +55,6 @@ pub struct UntrustedEntry {
     pub entries: Vec<Entry>,
     pub slot: u64,
     pub parent_slot: u64,
-    pub num_shreds: u64,
     pub is_full_slot: bool
 }
 
