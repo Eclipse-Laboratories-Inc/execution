@@ -1,39 +1,13 @@
 use {
     clap::{value_t_or_exit, App, Arg, SubCommand},
-    postgres::{Client, NoTls},
-    serde_derive::{Deserialize, Serialize},
-    shred_replay::{generate_hash, verify},
-    solana_ledger::{blockstore::Blockstore, shred::Shred},
-    std::{fs::File, io, io::Read, path::PathBuf},
-    thiserror::Error,
+    std::{fs::File, io::Read, path::PathBuf},
+    // shred_replay::{generate_hash, verify},
+    shred_replay::shred_replay::{
+        ReplayerPostgresConfig,
+        ReplayerError,
+        Replayer
+    },
 };
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ReplayerPostgresConfig {
-    /// The host name or IP of the PostgreSQL server
-    pub host: Option<String>,
-
-    /// The user name of the PostgreSQL server.
-    pub user: Option<String>,
-
-    pub password: Option<String>,
-    pub dbname: Option<String>,
-    /// The port number of the PostgreSQL database, the default is 5432
-    pub port: Option<u16>,
-}
-
-#[derive(Error, Debug)]
-pub enum ReplayerError {
-    /// Error opening the configuration file; for example, when the file
-    /// is not found or when the validator process has no permission to read it.
-    #[error("Error opening config file. Error detail: ({0}).")]
-    ConfigFileOpenError(#[from] io::Error),
-
-    /// Error in reading the content of the config file or the content
-    /// is not in the expected format.
-    #[error("Error reading config file. Error message: ({msg})")]
-    ConfigFileReadError { msg: String },
-}
 
 fn main() {
     let matches = App::new("solana-replayer")
@@ -81,46 +55,19 @@ fn main() {
         })
         .unwrap();
 
-    let connection_str = format!(
-        "host={} user={} password={} dbname={} port={}",
-        config.host.as_ref().unwrap(),
-        config.user.as_ref().unwrap(),
-        config.password.as_ref().unwrap(),
-        config.dbname.as_ref().unwrap(),
-        config.port.as_ref().unwrap(),
-    );
+    let replayer = Replayer::new(config, ledger_path);
 
-    let mut client = Client::connect(&connection_str, NoTls).unwrap();
-    let stmt = "SELECT * FROM shred where slot = $1";
-    let stmt = client.prepare(stmt).unwrap();
-
-    let blockstore = Blockstore::open(ledger_path.as_path()).unwrap();
-    let slot = blockstore.max_root() as i64;
-
-    // Query shred by slot and update blockstore.
-    for row in client.query(&stmt, &[&slot]).unwrap() {
-        let payload: Vec<u8> = row.get(0);
-        let shred = Shred::new_from_serialized_shred(payload).unwrap();
-        let mut success = false;
-        while !success {
-            match blockstore.insert_shreds(vec![shred.clone()], None, false) {
-                Ok(_) => success = true,
-                Err(_) => success = false,
-            }
-        }
-    }
- 
     // Execute subcommand.
     match matches.subcommand() {
         ("", _) | ("replay", _) => {
             return;
         }
         ("verify", _) => {
-            verify();
+            // verify();
             return;
         }
         ("hash", _) => {
-            generate_hash();
+            // generate_hash();
             return;
         }
         _ => unreachable!(),

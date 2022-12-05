@@ -1,3 +1,3 @@
-pub fn verify() {}
+/// shred_replay process lib
 
-pub fn generate_hash() {}
+pub mod shred_replay;
