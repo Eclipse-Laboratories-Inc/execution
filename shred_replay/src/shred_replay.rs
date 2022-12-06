@@ -1,74 +1,29 @@
+use assert_cmd::prelude::*;
 use {
     thiserror::Error,
     postgres::{Client, NoTls},
-    std::{io, path::PathBuf},
+    std::{
+        io,
+        path::PathBuf,
+        process::{Command, Output},
+    },
     serde_derive::{Deserialize, Serialize},
+    solana_ledger::{
+        shred::Shred,
+        blockstore,
+        blockstore::Blockstore,
+        genesis_utils::create_genesis_config,
+        blockstore_options
+    },
+
 };
-
-#[derive(Default)]
-pub struct Replayer {
-    client: Option<Client>,
-}
-
-impl Replayer {
-    pub fn new(config_file: ReplayerPostgresConfig, ledger_path: PathBuf) -> Replayer {
-        Replayer { client: None }
-    }
-
-    pub fn todo(&mut self) {
-        /*
-        let connection_str = format!(
-            "host={} user={} password={} dbname={} port={}",
-            config.host.as_ref().unwrap(),
-            config.user.as_ref().unwrap(),
-            config.password.as_ref().unwrap(),
-            config.dbname.as_ref().unwrap(),
-            config.port.as_ref().unwrap(),
-        );
-
-        let mut client = Client::connect(&connection_str, NoTls).unwrap();
-        let stmt = "SELECT slot, entry_index, entry FROM entry where slot = $1";
-        let stmt = client.prepare(stmt).unwrap();
-
-        let blockstore = Blockstore::open(ledger_path.as_path()).unwrap();
-        let slot: i64 = 1;
-
-        let shreds: Vec<Shred> = Vec::new();
-        // Query shred by slot and update blockstore.
-        let result = client.query(&stmt, &[&slot]);
-        if let Err(e) = result {
-
-        }
-        for row in res.unwrap() {
-            let payload: Vec<u8> = row.get(0);
-            let result = Shred::new_from_serialized_shred(payload);
-            if let Err(e) = result {
-
-            }
-            shreds.append(result.unwrap())
-        };
-
-        for row in client.query(&stmt, &[&slot]).unwrap() {
-            let mut success = false;
-            while !success {
-                match blockstore.insert_shreds(vec![shred.clone()], None, false) {
-                    Ok(_) => success = true,
-                    Err(_) => success = false,
-                }
-            }
-        }
-         */
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ReplayerPostgresConfig {
     /// The host name or IP of the PostgreSQL server
     pub host: Option<String>,
-
     /// The user name of the PostgreSQL server.
     pub user: Option<String>,
-
     pub password: Option<String>,
     pub dbname: Option<String>,
     /// The port number of the PostgreSQL database, the default is 5432
@@ -86,4 +41,132 @@ pub enum ReplayerError {
     /// is not in the expected format.
     #[error("Error reading config file. Error message: ({msg})")]
     ConfigFileReadError { msg: String },
+
+    #[error("Error connecting postgresdb Error message: ({msg})")]
+    DbConnectError { msg: String },
+
+    #[error("Error initializing ledger Error message: ({msg})")]
+    InitLedgerError { msg: String },
+
+    #[error("Error initializing blockstore Error message: ({msg})")]
+    InitBlockstoreError { msg: String },
+
+    #[error("Error insert shreds into blockstore")]
+    InsertShredError,
+}
+
+pub struct Replayer {
+    client: Option<Client>,
+    config: Option<ReplayerPostgresConfig>,
+    ledger_path: Option<PathBuf>,
+    blockstore: Option<Blockstore>,
+}
+
+impl Replayer {
+    pub fn new() -> Self {
+        Self {
+            client: None,
+            config: None,
+            ledger_path: None,
+            blockstore: None,
+        }
+    }
+
+    pub fn config(mut self, config: &ReplayerPostgresConfig) -> Self {
+        self.config = Some(config.clone());
+        self
+    }
+
+    pub fn ledger_path(mut self, ledger_path: &PathBuf) -> Self {
+        self.ledger_path = Some(ledger_path.clone());
+        self
+    }
+
+    pub fn connect_db(&mut self) -> Result<(), ReplayerError> {
+        let config = self.config.as_ref().unwrap();
+        let connection_str = format!(
+            "host={} user={} password={} dbname={} port={}",
+            config.host.as_ref().unwrap(),
+            config.user.as_ref().unwrap(),
+            config.password.as_ref().unwrap(),
+            config.dbname.as_ref().unwrap(),
+            config.port.as_ref().unwrap(),
+        );
+        let client = Client::connect(&connection_str, NoTls).map_err(|_| {
+            ReplayerError::DbConnectError {
+                msg: format!("the config is {}", connection_str)
+            }
+        })?;
+
+        self.client = Some(client);
+        Ok(())
+    }
+
+    pub fn init_ledger(&mut self) -> Result<(), ReplayerError> {
+        if self.ledger_path.as_ref().unwrap().exists() {
+
+        } else {
+            let genesis_config = create_genesis_config(100).genesis_config;
+            let (_ledger_path, _blockhash) = blockstore::create_new_ledger_from_name(
+                &self.ledger_path.as_mut().unwrap().as_path().display().to_string(),
+                &genesis_config,
+                blockstore_options::LedgerColumnOptions {
+                    shred_storage_type: blockstore_options::ShredStorageType::RocksFifo(
+                        blockstore_options::BlockstoreRocksFifoOptions::default(),
+                    ),
+                    ..blockstore_options::LedgerColumnOptions::default()
+                }
+            );
+        }
+        Ok(())
+    }
+
+    /// load shred from postgres by slot, order by index asc
+    fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
+        let mut shreds: Vec<Shred> = Vec::new();
+        let stmt = "SELECT slot, entry_index, entry FROM entry where slot = $1 order by entry_index asc";
+        let client = self.client.as_mut().unwrap();
+        let stmt = client.prepare(stmt).unwrap();
+
+        let result = client.query(&stmt, &[&(slot as i64)]);
+        if result.is_err() {
+        }
+
+        for row in result.unwrap() {
+            let payload: Vec<u8> = row.get(2);
+            let result = Shred::new_from_serialized_shred(payload);
+            if result.is_err() {}
+            shreds.push(result.unwrap());
+        };
+        shreds
+    }
+
+    pub fn setup_blockstore(&mut self) -> Result<(), ReplayerError> {
+        let blockstore = Blockstore::open(self.ledger_path.as_ref().unwrap()).map_err(
+            |e| {
+                ReplayerError::InitBlockstoreError{ msg: {e.to_string()} }
+            }
+        )?;
+        self.blockstore = Some(blockstore);
+        Ok(())
+    }
+
+    /// Query shred by slot and update blockstore.
+    pub fn insert_shred_by_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
+        let shreds = self.load_shred_from_pg(slot);
+        self.blockstore.as_mut().unwrap().insert_shreds(shreds, None, false).map_err(
+            |_| {
+                ReplayerError::InsertShredError
+            }
+        )?;
+        Ok(())
+    }
+}
+
+pub fn run_ledger_tool(args: &[&str]) -> Output {
+    Command::cargo_bin("solana-ledger-tool")
+        .unwrap()
+        .args(args)
+        .output()
+        .unwrap()
 }

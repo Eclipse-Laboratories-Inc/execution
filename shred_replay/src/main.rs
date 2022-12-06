@@ -1,3 +1,4 @@
+use log::error;
 use {
     clap::{value_t_or_exit, App, Arg, SubCommand},
     std::{fs::File, io::Read, path::PathBuf},
@@ -5,7 +6,8 @@ use {
     shred_replay::shred_replay::{
         ReplayerPostgresConfig,
         ReplayerError,
-        Replayer
+        Replayer,
+        run_ledger_tool
     },
 };
 
@@ -55,19 +57,41 @@ fn main() {
         })
         .unwrap();
 
-    let replayer = Replayer::new(config, ledger_path);
+    let mut replayer = Replayer::new()
+        .config(&config)
+        .ledger_path(&ledger_path);
+
+    if let Err(e) = replayer.connect_db() {
+        error!("{}", e);
+    };
+    if let Err(e) = replayer.init_ledger() {
+        error!("{}", e);
+    }
+    if let Err(e) = replayer.setup_blockstore() {
+        error!("{}", e);
+    };
+    let slot_id = 1u64;
+    if let Err(e) = replayer.insert_shred_by_slot(slot_id) {
+        error!("{}", e);
+    }
 
     // Execute subcommand.
     match matches.subcommand() {
-        ("", _) | ("replay", _) => {
-            return;
-        }
         ("verify", _) => {
-            // verify();
+            let src_slot_output = run_ledger_tool(&[
+                "-l",
+                &ledger_path.as_path().display().to_string(),
+                "verify",
+                ]);
+            assert!(src_slot_output.status.success());
             return;
         }
-        ("hash", _) => {
-            // generate_hash();
+        ("bank-hash", _) => {
+            let src_slot_output = run_ledger_tool(&[
+                "-l",
+                &ledger_path.as_path().display().to_string(),
+                "bank-hash"]);
+            assert!(src_slot_output.status.success());
             return;
         }
         _ => unreachable!(),
