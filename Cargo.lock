@@ -4644,6 +4644,7 @@ dependencies = [
  "serde_json",
  "solana-entry",
  "solana-ledger",
+ "solana-runtime",
  "solana-sdk 1.14.6",
  "thiserror",
 ]

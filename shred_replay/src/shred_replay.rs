@@ -4,7 +4,7 @@ use {
     postgres::{Client, NoTls},
     std::{
         io,
-        path::PathBuf,
+        path::{PathBuf, Path},
         process::{Command, Output},
     },
     serde_derive::{Deserialize, Serialize},
@@ -13,9 +13,10 @@ use {
         blockstore,
         blockstore::Blockstore,
         genesis_utils::create_genesis_config,
-        blockstore_options
+        blockstore_options,
     },
-
+    solana_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
+    solana_sdk::genesis_config::GenesisConfig
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -103,34 +104,30 @@ impl Replayer {
     }
 
     pub fn init_ledger(&mut self) -> Result<(), ReplayerError> {
-        if self.ledger_path.as_ref().unwrap().exists() {
-
-        } else {
-            let genesis_config = create_genesis_config(100).genesis_config;
-            let (_ledger_path, _blockhash) = blockstore::create_new_ledger_from_name(
-                &self.ledger_path.as_mut().unwrap().as_path().display().to_string(),
+        if self.ledger_path.as_ref().unwrap().exists() {} else {
+            // let genesis_config = create_genesis_config(100).genesis_config;
+            let origin_legder_path = Path::new("/tmp/test-ledger");
+            let genesis_config = GenesisConfig::load(origin_legder_path).unwrap();
+            let _last_hash = blockstore::create_new_ledger(
+                self.ledger_path.as_ref().unwrap().as_path(),
                 &genesis_config,
-                blockstore_options::LedgerColumnOptions {
-                    shred_storage_type: blockstore_options::ShredStorageType::RocksFifo(
-                        blockstore_options::BlockstoreRocksFifoOptions::default(),
-                    ),
-                    ..blockstore_options::LedgerColumnOptions::default()
-                }
+                MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
+                blockstore_options::LedgerColumnOptions::default(),
             );
-        }
+        };
         Ok(())
     }
+
 
     /// load shred from postgres by slot, order by index asc
     fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
         let mut shreds: Vec<Shred> = Vec::new();
-        let stmt = "SELECT slot, entry_index, entry FROM entry where slot = $1 order by entry_index asc";
+        let stmt = "SELECT slot, entry_index, entry FROM entry where slot <= $1";
         let client = self.client.as_mut().unwrap();
         let stmt = client.prepare(stmt).unwrap();
 
         let result = client.query(&stmt, &[&(slot as i64)]);
-        if result.is_err() {
-        }
+        if result.is_err() {}
 
         for row in result.unwrap() {
             let payload: Vec<u8> = row.get(2);
@@ -144,7 +141,7 @@ impl Replayer {
     pub fn setup_blockstore(&mut self) -> Result<(), ReplayerError> {
         let blockstore = Blockstore::open(self.ledger_path.as_ref().unwrap()).map_err(
             |e| {
-                ReplayerError::InitBlockstoreError{ msg: {e.to_string()} }
+                ReplayerError::InitBlockstoreError { msg: { e.to_string() } }
             }
         )?;
         self.blockstore = Some(blockstore);
@@ -152,7 +149,7 @@ impl Replayer {
     }
 
     /// Query shred by slot and update blockstore.
-    pub fn insert_shred_by_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
+    pub fn insert_shred_endwith_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
         let shreds = self.load_shred_from_pg(slot);
         self.blockstore.as_mut().unwrap().insert_shreds(shreds, None, false).map_err(
             |_| {

@@ -70,8 +70,8 @@ fn main() {
     if let Err(e) = replayer.setup_blockstore() {
         error!("{}", e);
     };
-    let slot_id = 1u64;
-    if let Err(e) = replayer.insert_shred_by_slot(slot_id) {
+    let slot = 1u64;
+    if let Err(e) = replayer.insert_shred_endwith_slot(slot) {
         error!("{}", e);
     }
 
@@ -84,6 +84,7 @@ fn main() {
                 "verify",
                 ]);
             assert!(src_slot_output.status.success());
+            println!("{}", String::from_utf8(src_slot_output.stdout).unwrap());
             return;
         }
         ("bank-hash", _) => {
@@ -92,6 +93,7 @@ fn main() {
                 &ledger_path.as_path().display().to_string(),
                 "bank-hash"]);
             assert!(src_slot_output.status.success());
+            println!("{}", String::from_utf8(src_slot_output.stdout).unwrap());
             return;
         }
         _ => unreachable!(),
