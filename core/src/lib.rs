@@ -80,7 +80,6 @@ pub mod vote_stake_tracker;
 pub mod voting_service;
 pub mod warm_quic_cache_service;
 pub mod window_service;
-pub mod entry_service;
 
 #[macro_use]
 extern crate eager;

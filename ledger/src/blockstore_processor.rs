@@ -738,7 +738,6 @@ pub fn test_process_blockstore(
         None,
         None,
         &AbsRequestSender::default(),
-        None,
     )
     .unwrap();
     (bank_forks, leader_schedule_cache)
@@ -789,7 +788,6 @@ pub fn process_blockstore_from_root(
     transaction_status_sender: Option<&TransactionStatusSender>,
     cache_block_meta_sender: Option<&CacheBlockMetaSender>,
     accounts_background_request_sender: &AbsRequestSender,
-    entry_sender: Option<&EntrySender>,
 ) -> result::Result<(), BlockstoreProcessorError> {
     // Starting slot must be a root, and thus has no parents
     assert_eq!(bank_forks.read().unwrap().banks().len(), 1);
@@ -838,7 +836,6 @@ pub fn process_blockstore_from_root(
             cache_block_meta_sender,
             &mut timing,
             accounts_background_request_sender,
-            entry_sender,
         )?;
     } else {
         // If there's no meta in the blockstore for the input `start_slot`,
@@ -942,7 +939,6 @@ fn confirm_full_slot(
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     timing: &mut ExecuteTimings,
-    entry_sender: Option<&EntrySender>,
 ) -> result::Result<(), BlockstoreProcessorError> {
     let mut confirmation_timing = ConfirmationTiming::default();
     let skip_verification = !opts.poh_verify;
@@ -958,7 +954,6 @@ fn confirm_full_slot(
         recyclers,
         opts.allow_dead_slots,
         opts.runtime_config.log_messages_bytes_limit,
-        entry_sender,
     )?;
 
     timing.accumulate(&confirmation_timing.execute_timings);
@@ -1085,7 +1080,6 @@ pub fn confirm_slot(
     recyclers: &VerifyRecyclers,
     allow_dead_slots: bool,
     log_messages_bytes_limit: Option<usize>,
-    entry_sender: Option<&EntrySender>,
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
 
@@ -1102,21 +1096,6 @@ pub fn confirm_slot(
         }
         load_result
     }?;
-
-    // send (entries, slot, parent_slot, is_full_slot) to channel
-    // so that *geyser-plugin*.so will received and notify it to Kafka/PostgresSQL DB
-
-    if let Some(entry_sender) = entry_sender {
-        if let Err(e) = entry_sender.send(
-            UntrustedEntry {
-                entries: slot_entries_load_result.0.clone(),
-                slot: slot,
-                parent_slot: bank.parent_slot(),
-                is_full_slot: slot_entries_load_result.2}
-        ) {
-            trace!("entries send batch failed: {:?}", e);
-        }
-    }
 
     confirm_slot_entries(
         bank,
@@ -1310,7 +1289,6 @@ fn process_bank_0(
         None,
         None,
         &mut ExecuteTimings::default(),
-        None,
     )
     .expect("Failed to process bank 0 from ledger. Did you forget to provide a snapshot?");
     bank0.freeze();
@@ -1389,7 +1367,6 @@ fn load_frozen_forks(
     cache_block_meta_sender: Option<&CacheBlockMetaSender>,
     timing: &mut ExecuteTimings,
     accounts_background_request_sender: &AbsRequestSender,
-    entry_sender: Option<&EntrySender>,
 ) -> result::Result<u64, BlockstoreProcessorError> {
     let recyclers = VerifyRecyclers::default();
     let mut all_banks = HashMap::new();
@@ -1452,7 +1429,6 @@ fn load_frozen_forks(
                 cache_block_meta_sender,
                 None,
                 timing,
-                entry_sender,
             )
             .is_err()
             {
@@ -1653,7 +1629,6 @@ fn process_single_slot(
     cache_block_meta_sender: Option<&CacheBlockMetaSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     timing: &mut ExecuteTimings,
-    entry_sender: Option<&EntrySender>,
 ) -> result::Result<(), BlockstoreProcessorError> {
     // Mark corrupt slots as dead so validators don't replay this slot and
     // see AlreadyProcessed errors later in ReplayStage
@@ -1666,7 +1641,6 @@ fn process_single_slot(
         transaction_status_sender,
         replay_vote_sender,
         timing,
-        entry_sender,
     )
     .map_err(|err| {
         let slot = bank.slot();

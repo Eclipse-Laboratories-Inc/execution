@@ -22,7 +22,6 @@ use {
         tower_storage::TowerStorage,
         tpu::{Tpu, TpuSockets, DEFAULT_TPU_COALESCE_MS},
         tvu::{Tvu, TvuConfig, TvuSockets},
-        entry_service::EntryService,
     },
     crossbeam_channel::{bounded, unbounded, Receiver},
     rand::{thread_rng, Rng},
@@ -112,8 +111,7 @@ use {
         thread::{sleep, Builder, JoinHandle},
         time::{Duration, Instant},
     },
-    solana_entry::entry::{EntrySender},
-    solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
+    // solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
 };
 
 const MAX_COMPLETED_DATA_SETS_IN_CHANNEL: usize = 100_000;
@@ -335,13 +333,6 @@ struct TransactionHistoryServices {
     cache_block_meta_service: Option<CacheBlockMetaService>,
 }
 
-#[derive(Default)]
-struct EntryServices {
-    entry_sender: Option<EntrySender>,
-    entry_service: Option<EntryService>,
-}
-
-
 pub struct Validator {
     validator_exit: Arc<RwLock<Exit>>,
     json_rpc_service: Option<JsonRpcService>,
@@ -371,7 +362,6 @@ pub struct Validator {
     ledger_metric_report_service: LedgerMetricReportService,
     accounts_background_service: AccountsBackgroundService,
     accounts_hash_verifier: AccountsHashVerifier,
-    entry_service: Option<EntryService>,
 }
 
 // in the distant future, get rid of ::new()/exit() and use Result properly...
@@ -562,10 +552,6 @@ impl Validator {
                 cache_block_meta_sender,
                 cache_block_meta_service,
             },
-            EntryServices {
-                entry_sender,
-                entry_service,
-            },
             blockstore_process_options,
             blockstore_root_scan,
             pruned_banks_receiver,
@@ -577,7 +563,7 @@ impl Validator {
             accounts_update_notifier,
             transaction_notifier,
             Some(poh_timing_point_sender.clone()),
-            entry_notifier,
+            // entry_notifier,
         );
 
         node.info.wallclock = timestamp();
@@ -718,7 +704,6 @@ impl Validator {
             blockstore_root_scan,
             accounts_background_request_sender.clone(),
             config,
-            entry_sender.as_ref(),
         );
 
         maybe_warp_slot(
@@ -1037,7 +1022,7 @@ impl Validator {
             accounts_background_request_sender,
             config.runtime_config.log_messages_bytes_limit,
             &connection_cache,
-            entry_sender.clone(),
+            entry_notifier,
         );
 
         let tpu = Tpu::new(
@@ -1112,7 +1097,6 @@ impl Validator {
             ledger_metric_report_service,
             accounts_background_service,
             accounts_hash_verifier,
-            entry_service
         }
     }
 
@@ -1197,12 +1181,6 @@ impl Validator {
             cache_block_meta_service
                 .join()
                 .expect("cache_block_meta_service");
-        }
-
-        if let Some(entry_service) = self.entry_service {
-            entry_service
-                .join()
-                .expect("entry_service");
         }
 
         if let Some(system_monitor_service) = self.system_monitor_service {
@@ -1402,7 +1380,6 @@ fn load_blockstore(
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
     transaction_notifier: Option<TransactionNotifierLock>,
     poh_timing_point_sender: Option<PohTimingSender>,
-    entry_notifier: Option<EntryNotifierLock>,
 ) -> (
     GenesisConfig,
     Arc<RwLock<BankForks>>,
@@ -1413,7 +1390,6 @@ fn load_blockstore(
     LeaderScheduleCache,
     Option<StartingSnapshotHashes>,
     TransactionHistoryServices,
-    EntryServices,
     blockstore_processor::ProcessOptions,
     BlockstoreRootScan,
     DroppedSlotsReceiver,
@@ -1502,17 +1478,6 @@ fn load_blockstore(
             TransactionHistoryServices::default()
         };
 
-    let is_plugin_entry_required = entry_notifier.as_ref().is_some();
-    let entry_services =
-        if is_plugin_entry_required {
-            initialize_entry_services(
-                exit,
-                entry_notifier,
-            )
-        } else {
-            EntryServices::default()
-        };
-
     let (bank_forks, mut leader_schedule_cache, starting_snapshot_hashes) =
         bank_forks_utils::load_bank_forks(
             &genesis_config,
@@ -1573,7 +1538,6 @@ fn load_blockstore(
         leader_schedule_cache,
         starting_snapshot_hashes,
         transaction_history_services,
-        entry_services,
         process_options,
         blockstore_root_scan,
         pruned_banks_receiver,
@@ -1595,7 +1559,6 @@ pub struct ProcessBlockStore<'a> {
     accounts_background_request_sender: AbsRequestSender,
     config: &'a ValidatorConfig,
     tower: Option<Tower>,
-    entry_sender: Option<&'a EntrySender>,
 }
 
 impl<'a> ProcessBlockStore<'a> {
@@ -1614,7 +1577,6 @@ impl<'a> ProcessBlockStore<'a> {
         blockstore_root_scan: BlockstoreRootScan,
         accounts_background_request_sender: AbsRequestSender,
         config: &'a ValidatorConfig,
-        entry_sender: Option<&'a EntrySender>,
     ) -> Self {
         Self {
             id,
@@ -1631,7 +1593,6 @@ impl<'a> ProcessBlockStore<'a> {
             accounts_background_request_sender,
             config,
             tower: None,
-            entry_sender,
         }
     }
 
@@ -1666,7 +1627,6 @@ impl<'a> ProcessBlockStore<'a> {
                 self.transaction_status_sender,
                 self.cache_block_meta_sender.as_ref(),
                 &self.accounts_background_request_sender,
-                self.entry_sender,
             )
             .unwrap_or_else(|err| {
                 error!("Failed to load ledger: {:?}", err);
@@ -1903,23 +1863,6 @@ fn initialize_rpc_transaction_history_services(
         rewards_recorder_service,
         cache_block_meta_sender,
         cache_block_meta_service,
-    }
-}
-
-fn initialize_entry_services(
-    exit: &Arc<AtomicBool>,
-    entry_notifier: Option<EntryNotifierLock>,
-) -> EntryServices {
-    let (entry_sender, entry_receiver) = unbounded();
-    let entry_sender = Some(entry_sender);
-    let entry_service = Some(EntryService::new(
-        entry_receiver,
-        entry_notifier,
-        exit,
-    ));
-    EntryServices {
-        entry_sender,
-        entry_service,
     }
 }
 

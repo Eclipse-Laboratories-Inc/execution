@@ -52,8 +52,8 @@ use {
         sync::{atomic::AtomicBool, Arc, RwLock},
         thread::{self, JoinHandle},
     },
+    solana_geyser_plugin_manager::entry_notifier_interface::EntryNotifierLock,
 };
-use solana_entry::entry::EntrySender;
 
 pub struct Tvu {
     fetch_stage: ShredFetchStage,
@@ -130,7 +130,7 @@ impl Tvu {
         accounts_background_request_sender: AbsRequestSender,
         log_messages_bytes_limit: Option<usize>,
         connection_cache: &Arc<ConnectionCache>,
-        entry_sender: Option<EntrySender>,
+        entry_notifier: Option<EntryNotifierLock>,
     ) -> Self {
         let TvuSockets {
             repair: repair_socket,
@@ -239,7 +239,6 @@ impl Tvu {
             ancestor_hashes_replay_update_sender,
             tower_storage: tower_storage.clone(),
             wait_to_vote_slot,
-            entry_sender,
         };
 
         let (voting_sender, voting_receiver) = unbounded();
@@ -291,6 +290,7 @@ impl Tvu {
             drop_bank_sender,
             block_metadata_notifier,
             log_messages_bytes_limit,
+            entry_notifier,
         );
 
         let ledger_cleanup_service = tvu_config.max_ledger_shreds.map(|max_ledger_shreds| {
