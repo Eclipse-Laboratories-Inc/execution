@@ -132,8 +132,17 @@ graph TD
   
   # replay shred and generate bank hash.
   shred-replay-service -c <pgconfig_path.json> -l <ledger_path> bank_hash
+
+  # build a transaction like airdrop
+  solana config set --url localhost
+  solana config get --url localhost
+  # Keypair Path: /Users/solana/wallet/keypair.json
+  solana-keygen pubkey /Users/solana/wallet/keypair.json
+  # got pubkey: 5b1H000000000000000000000000000000000000vMPE
+  solana airdrop 1.2 <replace with RECIPIENT_ACCOUNT_ADDRESS or my_pubkey> --url localhost 
   ```
   
+
   _pgconfig_path.json_ file has same parameters as geyser plugin configuration, which means same PG settings and database name as execution node's.
 
 #### Core designs of Execution Layer
