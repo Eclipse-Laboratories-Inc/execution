@@ -212,6 +212,14 @@ CREATE TABLE entry (
 
 CREATE INDEX entry_slot_index ON entry (slot, entry_index);
 
+CREATE TABLE proof (
+    slot BIGINT NOT NULL,
+    proof VARCHAR(64),
+    updated_on TIMESTAMP NOT NULL
+);
+
+CREATE INDEX proof_slot_index ON proof (slot);
+
 /**
  * The following is for keeping historical data for accounts and is not required for plugin to work.
  */

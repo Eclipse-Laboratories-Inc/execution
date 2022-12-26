@@ -5,3 +5,4 @@ pub mod inline_spl_token_2022;
 pub mod postgres_client;
 pub mod transaction_selector;
 pub mod entry_selector;
+pub mod smt_tool;
