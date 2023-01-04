@@ -89,6 +89,7 @@ members = [
     "solana-accountsdb-plugin-postgres",
     "shred_replay",
     "smt-proof",
+    "jmt-proof",
 ]
 
 exclude = [
