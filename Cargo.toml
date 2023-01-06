@@ -87,7 +87,8 @@ members = [
     "watchtower",
     "zk-token-sdk",
     "solana-accountsdb-plugin-postgres",
-    "shred_replay"
+    "shred_replay",
+    "smt-proof",
 ]
 
 exclude = [
