@@ -3849,7 +3849,7 @@ fn slot_has_updates(slot_meta: &SlotMeta, slot_meta_backup: &Option<SlotMeta>) -
 pub fn create_new_ledger(
     ledger_path: &Path,
     genesis_config: &GenesisConfig,
-    max_genesis_archive_unpacked_size: u64,
+    _max_genesis_archive_unpacked_size: u64,
     column_options: LedgerColumnOptions,
 ) -> Result<Hash> {
     Blockstore::destroy(ledger_path)?;
@@ -3920,7 +3920,7 @@ pub fn create_new_ledger(
     // ensure the genesis archive can be unpacked and it is under
     // max_genesis_archive_unpacked_size, immediately after creating it above.
     {
-        let temp_dir = tempfile::tempdir_in(ledger_path).unwrap();
+        let _temp_dir = tempfile::tempdir_in(ledger_path).unwrap();
         // unpack into a temp dir, while completely discarding the unpacked files
         // let unpack_check = unpack_genesis_archive(
         //     &archive_path,

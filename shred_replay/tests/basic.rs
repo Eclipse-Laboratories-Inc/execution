@@ -1,6 +1,5 @@
-use assert_cmd::prelude::*;
-
 use {
+    assert_cmd::prelude::*,
     solana_entry::entry,
     solana_ledger::{
         blockstore, blockstore::Blockstore, blockstore_options::ShredStorageType,

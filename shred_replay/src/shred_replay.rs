@@ -1,22 +1,22 @@
 use assert_cmd::prelude::*;
 use {
-    thiserror::Error,
     postgres::{Client, NoTls},
-    std::{
-        io,
-        path::{PathBuf, Path},
-        process::{Command, Output},
-    },
     serde_derive::{Deserialize, Serialize},
     solana_ledger::{
-        shred::Shred,
         blockstore,
         blockstore::Blockstore,
-        genesis_utils::create_genesis_config,
+        // genesis_utils::create_genesis_config,
         blockstore_options,
+        shred::Shred,
     },
     solana_runtime::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
-    solana_sdk::genesis_config::GenesisConfig
+    solana_sdk::genesis_config::GenesisConfig,
+    std::{
+        io,
+        path::{Path, PathBuf},
+        process::{Command, Output},
+    },
+    thiserror::Error,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -93,18 +93,18 @@ impl Replayer {
             config.dbname.as_ref().unwrap(),
             config.port.as_ref().unwrap(),
         );
-        let client = Client::connect(&connection_str, NoTls).map_err(|_| {
-            ReplayerError::DbConnectError {
-                msg: format!("the config is {}", connection_str)
-            }
-        })?;
+        let client =
+            Client::connect(&connection_str, NoTls).map_err(|_| ReplayerError::DbConnectError {
+                msg: format!("the config is {}", connection_str),
+            })?;
 
         self.client = Some(client);
         Ok(())
     }
 
     pub fn init_ledger(&mut self) -> Result<(), ReplayerError> {
-        if self.ledger_path.as_ref().unwrap().exists() {} else {
+        if self.ledger_path.as_ref().unwrap().exists() {
+        } else {
             // let genesis_config = create_genesis_config(100).genesis_config;
             let origin_legder_path = Path::new("/tmp/test-ledger");
             let genesis_config = GenesisConfig::load(origin_legder_path).unwrap();
@@ -117,7 +117,6 @@ impl Replayer {
         };
         Ok(())
     }
-
 
     /// load shred from postgres by slot, order by index asc
     fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
@@ -134,16 +133,16 @@ impl Replayer {
             let result = Shred::new_from_serialized_shred(payload);
             if result.is_err() {}
             shreds.push(result.unwrap());
-        };
+        }
         shreds
     }
 
     pub fn setup_blockstore(&mut self) -> Result<(), ReplayerError> {
-        let blockstore = Blockstore::open(self.ledger_path.as_ref().unwrap()).map_err(
-            |e| {
-                ReplayerError::InitBlockstoreError { msg: { e.to_string() } }
+        let blockstore = Blockstore::open(self.ledger_path.as_ref().unwrap()).map_err(|e| {
+            ReplayerError::InitBlockstoreError {
+                msg: { e.to_string() },
             }
-        )?;
+        })?;
         self.blockstore = Some(blockstore);
         Ok(())
     }
@@ -151,11 +150,11 @@ impl Replayer {
     /// Query shred by slot and update blockstore.
     pub fn insert_shred_endwith_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
         let shreds = self.load_shred_from_pg(slot);
-        self.blockstore.as_mut().unwrap().insert_shreds(shreds, None, false).map_err(
-            |_| {
-                ReplayerError::InsertShredError
-            }
-        )?;
+        self.blockstore
+            .as_mut()
+            .unwrap()
+            .insert_shreds(shreds, None, false)
+            .map_err(|_| ReplayerError::InsertShredError)?;
         Ok(())
     }
 }

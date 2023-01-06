@@ -1,14 +1,11 @@
 use log::error;
 use {
     clap::{value_t_or_exit, App, Arg, SubCommand},
-    std::{fs::File, io::Read, path::PathBuf},
     // shred_replay::{generate_hash, verify},
     shred_replay::shred_replay::{
-        ReplayerPostgresConfig,
-        ReplayerError,
-        Replayer,
-        run_ledger_tool
+        run_ledger_tool, Replayer, ReplayerError, ReplayerPostgresConfig,
     },
+    std::{fs::File, io::Read, path::PathBuf},
 };
 
 fn main() {
@@ -57,9 +54,7 @@ fn main() {
         })
         .unwrap();
 
-    let mut replayer = Replayer::new()
-        .config(&config)
-        .ledger_path(&ledger_path);
+    let mut replayer = Replayer::new().config(&config).ledger_path(&ledger_path);
 
     if let Err(e) = replayer.connect_db() {
         error!("{}", e);
@@ -78,11 +73,8 @@ fn main() {
     // Execute subcommand.
     match matches.subcommand() {
         ("verify", _) => {
-            let src_slot_output = run_ledger_tool(&[
-                "-l",
-                &ledger_path.as_path().display().to_string(),
-                "verify",
-                ]);
+            let src_slot_output =
+                run_ledger_tool(&["-l", &ledger_path.as_path().display().to_string(), "verify"]);
             assert!(src_slot_output.status.success());
             println!("{}", String::from_utf8(src_slot_output.stdout).unwrap());
             return;
@@ -91,7 +83,8 @@ fn main() {
             let src_slot_output = run_ledger_tool(&[
                 "-l",
                 &ledger_path.as_path().display().to_string(),
-                "bank-hash"]);
+                "bank-hash",
+            ]);
             assert!(src_slot_output.status.success());
             println!("{}", String::from_utf8(src_slot_output.stdout).unwrap());
             return;

@@ -12,7 +12,6 @@ use {
     rayon::{prelude::*, ThreadPool},
     solana_entry::entry::{
         self, create_ticks, Entry, EntrySlice, EntryType, EntryVerificationStatus, VerifyRecyclers,
-        EntrySender, UntrustedEntry
     },
     solana_measure::{measure, measure::Measure},
     solana_metrics::{datapoint_error, inc_new_counter_debug},
