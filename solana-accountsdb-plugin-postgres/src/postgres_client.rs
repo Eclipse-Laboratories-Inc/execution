@@ -1,9 +1,9 @@
 #![allow(clippy::integer_arithmetic)]
 
+mod postgre_client_entry;
 mod postgres_client_account_index;
 mod postgres_client_block_metadata;
 mod postgres_client_transaction;
-mod postgre_client_entry;
 
 /// A concurrent implementation for writing accounts into the PostgreSQL in parallel.
 use {
@@ -19,18 +19,18 @@ use {
     postgres_client_block_metadata::DbBlockInfo,
     postgres_client_transaction::LogTransactionRequest,
     postgres_openssl::MakeTlsConnector,
+    solana_entry::entry::UntrustedEntry,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfoV2, ReplicaBlockInfo, SlotStatus,
     },
     solana_measure::measure::Measure,
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
-    solana_entry::entry::UntrustedEntry,
     std::{
         collections::HashSet,
         sync::{
             atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
-            Arc, Mutex, RwLock
+            Arc, Mutex, RwLock,
         },
         thread::{self, sleep, Builder, JoinHandle},
         time::Duration,
@@ -236,9 +236,7 @@ pub trait PostgresClient {
         block_info: UpdateBlockMetadataRequest,
     ) -> Result<(), GeyserPluginError>;
 
-    fn log_entry(
-        &mut self,
-        entry: LogEntryRequest) -> Result<(), GeyserPluginError>;
+    fn log_entry(&mut self, entry: LogEntryRequest) -> Result<(), GeyserPluginError>;
 }
 
 impl SimplePostgresClient {
@@ -788,8 +786,7 @@ impl SimplePostgresClient {
             Self::build_transaction_info_upsert_statement(&mut client, config)?;
         let update_block_metadata_stmt =
             Self::build_block_metadata_upsert_statement(&mut client, config)?;
-        let log_entry_stmt =
-            Self::build_entry_upsert_statement(&mut client, config)?;
+        let log_entry_stmt = Self::build_entry_upsert_statement(&mut client, config)?;
 
         let batch_size = config
             .batch_size
@@ -1264,15 +1261,14 @@ impl ParallelPostgresClient {
             entries: entry.entries.clone(),
             slot: entry.slot,
             parent_slot: entry.parent_slot,
-            is_full_slot: entry.is_full_slot
+            is_full_slot: entry.is_full_slot,
         };
-        if let Err(err) = self.sender.send(
-            DbWorkItem::LogEntry(Box::new(LogEntryRequest {entry}))) {
+        if let Err(err) = self
+            .sender
+            .send(DbWorkItem::LogEntry(Box::new(LogEntryRequest { entry })))
+        {
             return Err(GeyserPluginError::EntryUpdateError {
-                msg: format!(
-                    "Failed to update the entry , error: {:?}",
-                    err
-                )
+                msg: format!("Failed to update the entry , error: {:?}", err),
             });
         }
         Ok(())
@@ -1388,11 +1384,7 @@ impl SequencePostgresClient {
 
                 match result {
                     Ok(mut worker) => {
-                        worker.do_work(
-                            receiver,
-                            exit_clone,
-                            panic_on_db_errors,
-                        )?;
+                        worker.do_work(receiver, exit_clone, panic_on_db_errors)?;
                         Ok(())
                     }
                     Err(err) => {
@@ -1418,7 +1410,7 @@ impl SequencePostgresClient {
     pub fn join(&mut self) -> thread::Result<()> {
         self.exit_worker.store(true, Ordering::Relaxed);
         if let Some(handle) = self.worker.take() {
-           let result = handle.join();
+            let result = handle.join();
             if result.is_err() {
                 error!("The worker thread has failed: {:?}", result);
             }
@@ -1461,12 +1453,13 @@ struct SequencePostgresClientWorker {
 }
 
 impl SequencePostgresClientWorker {
-    fn new(config: GeyserPluginPostgresConfig, slot: Arc<RwLock<u64>>) -> Result<Self, GeyserPluginError> {
+    fn new(
+        config: GeyserPluginPostgresConfig,
+        slot: Arc<RwLock<u64>>,
+    ) -> Result<Self, GeyserPluginError> {
         let result = SimplePostgresClient::new(&config);
         match result {
-            Ok(client) => Ok(SequencePostgresClientWorker {
-                client,
-            }),
+            Ok(client) => Ok(SequencePostgresClientWorker { client }),
             Err(err) => {
                 error!("Error in creating SequencePostgresClientWorker: {}", err);
                 Err(err)
@@ -1488,9 +1481,11 @@ impl SequencePostgresClientWorker {
                         info!("do_work_recv {:?}", request.account);
                     }
                     _ => (),
-                }
+                },
                 Err(err) => match err {
-                    RecvTimeoutError::Timeout => { continue; }
+                    RecvTimeoutError::Timeout => {
+                        continue;
+                    }
                     _ => {
                         error!("Error in receiving the item {:?}", err);
                         if panic_on_db_errors {
@@ -1503,5 +1498,4 @@ impl SequencePostgresClientWorker {
         }
         Ok(())
     }
-
 }

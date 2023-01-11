@@ -2,19 +2,19 @@
 use {
     crate::{
         accounts_selector::AccountsSelector,
-        postgres_client::{PostgresClientBuilder, ParallelPostgresClient, SequencePostgresClient},
-        transaction_selector::TransactionSelector,
         entry_selector::EntrySelector,
+        postgres_client::{ParallelPostgresClient, PostgresClientBuilder, SequencePostgresClient},
+        transaction_selector::TransactionSelector,
     },
     bs58,
     log::*,
     serde_derive::{Deserialize, Serialize},
     serde_json,
+    solana_entry::entry::UntrustedEntry,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPlugin, GeyserPluginError, ReplicaAccountInfoVersions, ReplicaBlockInfoVersions,
         ReplicaTransactionInfoVersions, Result, SlotStatus,
     },
-    solana_entry::entry::UntrustedEntry,
     solana_measure::measure::Measure,
     solana_metrics::*,
     std::{fs::File, io::Read},
@@ -225,13 +225,12 @@ impl GeyserPlugin for GeyserPluginPostgres {
             }
         }
 
-        match &mut self.sequence_client  {
-            None => {},
+        match &mut self.sequence_client {
+            None => {}
             Some(client) => {
                 client.join().unwrap();
             }
         }
-
     }
 
     fn update_account(
@@ -317,7 +316,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
 
                 // match Sequence Client
                 match &mut self.sequence_client {
-                    None =>  {
+                    None => {
                         return Err(GeyserPluginError::Custom(Box::new(
                             GeyserPluginPostgresError::DataStoreConnectionError {
                                 msg: "There is no connection to the PostgreSQL database."
@@ -485,15 +484,17 @@ impl GeyserPlugin for GeyserPluginPostgres {
                 let result = client.log_entry(entry);
                 if let Err(err) = result {
                     return Err(GeyserPluginError::EntryUpdateError {
-                        msg: format!("Failed to persist entry to the PostgreSQL database. Error: {:?}", err)
+                        msg: format!(
+                            "Failed to persist entry to the PostgreSQL database. Error: {:?}",
+                            err
+                        ),
                     });
                 }
-            },
+            }
         }
 
         Ok(())
     }
-
 
     /// Check if the plugin is interested in account data
     /// Default is true -- if the plugin is not interested in
@@ -576,9 +577,9 @@ impl GeyserPluginPostgres {
     fn create_entry_selector_from_config(config: &serde_json::Value) -> EntrySelector {
         let entry_selector = &config["entry_selector"];
         if entry_selector.is_null() {
-           EntrySelector::default()
+            EntrySelector::default()
         } else {
-           EntrySelector::new(true)
+            EntrySelector::new(true)
         }
     }
 
@@ -616,7 +617,7 @@ pub(crate) mod tests {
         let config = "{\"entry_selector\" : true}}";
 
         let config: serde_json::Value = serde_json::from_str(config).unwrap();
-        let entry_selector= GeyserPluginPostgres::create_entry_selector_from_config(&config);
+        let entry_selector = GeyserPluginPostgres::create_entry_selector_from_config(&config);
         assert_eq!(true, entry_selector.is_enabled());
     }
 }

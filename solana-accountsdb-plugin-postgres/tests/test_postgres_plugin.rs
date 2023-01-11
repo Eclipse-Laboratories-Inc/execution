@@ -1,7 +1,6 @@
 #![allow(clippy::integer_arithmetic)]
 
 use serde_json::json;
-
 /// Integration testing for the PostgreSQL plugin
 /// This requires a PostgreSQL database named 'solana' be setup at localhost at port 5432
 /// This is automatically setup in the CI environment.

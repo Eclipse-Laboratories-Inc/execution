@@ -3,7 +3,7 @@ pub(crate) struct EntrySelector {
     pub select_all_entry: bool,
 }
 
-impl EntrySelector{
+impl EntrySelector {
     pub fn default() -> Self {
         Self {
             select_all_entry: false,
@@ -12,7 +12,7 @@ impl EntrySelector{
 
     pub fn new(enable: bool) -> Self {
         Self {
-            select_all_entry: enable
+            select_all_entry: enable,
         }
     }
 

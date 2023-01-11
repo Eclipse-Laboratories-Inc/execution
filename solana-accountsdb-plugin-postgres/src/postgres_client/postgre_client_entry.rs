@@ -1,18 +1,15 @@
-
 // build_entry_upsert_statement
 
 use {
     crate::{
         geyser_plugin_postgres::{GeyserPluginPostgresConfig, GeyserPluginPostgresError},
-        postgres_client::{
-            SimplePostgresClient, LogEntryRequest
-        },
+        postgres_client::{LogEntryRequest, SimplePostgresClient},
     },
     chrono::Utc,
     log::*,
     postgres::{Client, Statement},
     solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
-    solana_ledger::blockstore
+    solana_ledger::blockstore,
 };
 
 impl SimplePostgresClient {
@@ -57,7 +54,12 @@ impl SimplePostgresClient {
         let (version, merkle_variant) = (0, true);
 
         let shreds = blockstore::entries_to_test_shreds(
-            &entries, slot, parent_slot, is_full_slot, version, merkle_variant,
+            &entries,
+            slot,
+            parent_slot,
+            is_full_slot,
+            version,
+            merkle_variant,
         );
 
         for (index, shred) in shreds.iter().enumerate() {
@@ -69,16 +71,17 @@ impl SimplePostgresClient {
                     &(index as i64),
                     &shred.payload(),
                     &is_full_slot,
-                    &updated_on]
+                    &updated_on,
+                ],
             );
             if let Err(err) = result {
                 let msg = format!(
                     "Failed to persist entry/shred to the PostgreSQL database. Error: {:?}",
-                    err);
+                    err
+                );
                 error!("{}", msg);
-                return Err(GeyserPluginError::EntryUpdateError {msg});
+                return Err(GeyserPluginError::EntryUpdateError { msg });
             }
-
         }
 
         Ok(())
