@@ -30,7 +30,7 @@ use {
         collections::HashSet,
         sync::{
             atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
-            Arc, Mutex,
+            Arc, Mutex, RwLock
         },
         thread::{self, sleep, Builder, JoinHandle},
         time::Duration,
@@ -1349,4 +1349,159 @@ impl PostgresClientBuilder {
 
         ParallelPostgresClient::new(config).map(|v| (v, batch_optimize_by_skiping_older_slots))
     }
+
+    pub fn build_sequence_postgres_client(
+        config: &GeyserPluginPostgresConfig,
+    ) -> Result<SequencePostgresClient, GeyserPluginError> {
+        SequencePostgresClient::new(config)
+    }
+}
+
+// SequenceClient, 1 recv, 1 worker thread
+
+pub struct SequencePostgresClient {
+    worker: Option<JoinHandle<Result<(), GeyserPluginError>>>,
+    exit_worker: Arc<AtomicBool>,
+    sender: Sender<DbWorkItem>,
+    slot: Arc<RwLock<u64>>,
+    // smt_tree: Arc<RwLock<SMT>>,
+}
+
+impl SequencePostgresClient {
+    pub fn new(config: &GeyserPluginPostgresConfig) -> Result<Self, GeyserPluginError> {
+        info!("Creating SequencePostgresClient...");
+        let (sender, receiver) = bounded(MAX_ASYNC_REQUESTS);
+        let exit_worker = Arc::new(AtomicBool::new(false));
+        let exit_clone = exit_worker.clone();
+        let config = config.clone();
+        // let smt_tree = Arc::new(RwLock::new(SMT::default()));
+        let slot: Arc<RwLock<u64>> = Arc::new(RwLock::new(1));
+        let slot_clone = slot.clone();
+        let worker = Builder::new()
+            .name(format!("worker-sequence-account"))
+            .spawn(move || -> Result<(), GeyserPluginError> {
+                let panic_on_db_errors = *config
+                    .panic_on_db_errors
+                    .as_ref()
+                    .unwrap_or(&DEFAULT_PANIC_ON_DB_ERROR);
+                let result = SequencePostgresClientWorker::new(config, slot_clone);
+
+                match result {
+                    Ok(mut worker) => {
+                        worker.do_work(
+                            receiver,
+                            exit_clone,
+                            panic_on_db_errors,
+                        )?;
+                        Ok(())
+                    }
+                    Err(err) => {
+                        error!("Error when making connection to database: ({})", err);
+                        if panic_on_db_errors {
+                            abort();
+                        }
+                        Err(err)
+                    }
+                }
+            })
+            .unwrap();
+
+        info!("Created SequencePostgresClient.");
+        Ok(Self {
+            worker: Some(worker),
+            exit_worker,
+            sender,
+            slot,
+        })
+    }
+
+    pub fn join(&mut self) -> thread::Result<()> {
+        self.exit_worker.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.worker.take() {
+           let result = handle.join();
+            if result.is_err() {
+                error!("The worker thread has failed: {:?}", result);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn update_account(
+        &mut self,
+        account: &ReplicaAccountInfoV2,
+        slot: u64,
+        is_startup: bool,
+    ) -> Result<(), GeyserPluginError> {
+        if !is_startup && account.txn_signature.is_none() {
+            // we are not interested in accountsdb internal bookeeping updates
+            return Ok(());
+        }
+
+        let wrk_item = DbWorkItem::UpdateAccount(Box::new(UpdateAccountRequest {
+            account: DbAccountInfo::new(account, slot),
+            is_startup,
+        }));
+
+        if let Err(err) = self.sender.send(wrk_item) {
+            return Err(GeyserPluginError::AccountsUpdateError {
+                msg: format!(
+                    "Failed to update the account {:?}, error: {:?}",
+                    bs58::encode(account.pubkey()).into_string(),
+                    err
+                ),
+            });
+        }
+
+        Ok(())
+    }
+}
+
+struct SequencePostgresClientWorker {
+    client: SimplePostgresClient,
+}
+
+impl SequencePostgresClientWorker {
+    fn new(config: GeyserPluginPostgresConfig, slot: Arc<RwLock<u64>>) -> Result<Self, GeyserPluginError> {
+        let result = SimplePostgresClient::new(&config);
+        match result {
+            Ok(client) => Ok(SequencePostgresClientWorker {
+                client,
+            }),
+            Err(err) => {
+                error!("Error in creating SequencePostgresClientWorker: {}", err);
+                Err(err)
+            }
+        }
+    }
+
+    fn do_work(
+        &mut self,
+        receiver: Receiver<DbWorkItem>,
+        exit_worker: Arc<AtomicBool>,
+        panic_on_db_errors: bool,
+    ) -> Result<(), GeyserPluginError> {
+        while !exit_worker.load(Ordering::Relaxed) {
+            let work = receiver.recv_timeout(Duration::from_millis(500));
+            match work {
+                Ok(work) => match work {
+                    DbWorkItem::UpdateAccount(request) => {
+                        info!("do_work_recv {:?}", request.account);
+                    }
+                    _ => (),
+                }
+                Err(err) => match err {
+                    RecvTimeoutError::Timeout => { continue; }
+                    _ => {
+                        error!("Error in receiving the item {:?}", err);
+                        if panic_on_db_errors {
+                            abort();
+                        }
+                        break;
+                    }
+                },
+            }
+        }
+        Ok(())
+    }
+
 }

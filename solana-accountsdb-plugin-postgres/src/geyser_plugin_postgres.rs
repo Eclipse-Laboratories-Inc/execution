@@ -2,7 +2,7 @@
 use {
     crate::{
         accounts_selector::AccountsSelector,
-        postgres_client::{ParallelPostgresClient, PostgresClientBuilder},
+        postgres_client::{PostgresClientBuilder, ParallelPostgresClient, SequencePostgresClient},
         transaction_selector::TransactionSelector,
         entry_selector::EntrySelector,
     },
@@ -24,6 +24,7 @@ use {
 #[derive(Default)]
 pub struct GeyserPluginPostgres {
     client: Option<ParallelPostgresClient>,
+    sequence_client: Option<SequencePostgresClient>, // only worker thread
     accounts_selector: Option<AccountsSelector>,
     transaction_selector: Option<TransactionSelector>,
     entry_selector: Option<EntrySelector>,
@@ -208,6 +209,9 @@ impl GeyserPlugin for GeyserPluginPostgres {
         self.client = Some(client);
         self.batch_starting_slot = batch_optimize_by_skiping_older_slots;
 
+        let sequence_client = PostgresClientBuilder::build_sequence_postgres_client(&config)?;
+        self.sequence_client = Some(sequence_client);
+
         Ok(())
     }
 
@@ -220,6 +224,14 @@ impl GeyserPlugin for GeyserPluginPostgres {
                 client.join().unwrap();
             }
         }
+
+        match &mut self.sequence_client  {
+            None => {},
+            Some(client) => {
+                client.join().unwrap();
+            }
+        }
+
     }
 
     fn update_account(
@@ -272,6 +284,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
                     self.accounts_selector.as_ref().unwrap()
                 );
 
+                // match parallel client
                 match &mut self.client {
                     None => {
                         return Err(GeyserPluginError::Custom(Box::new(
@@ -294,6 +307,26 @@ impl GeyserPlugin for GeyserPluginPostgres {
                             100000
                         );
 
+                        if let Err(err) = result {
+                            return Err(GeyserPluginError::AccountsUpdateError {
+                                msg: format!("Failed to persist the update of account to the PostgreSQL database. Error: {:?}", err)
+                            });
+                        }
+                    }
+                }
+
+                // match Sequence Client
+                match &mut self.sequence_client {
+                    None =>  {
+                        return Err(GeyserPluginError::Custom(Box::new(
+                            GeyserPluginPostgresError::DataStoreConnectionError {
+                                msg: "There is no connection to the PostgreSQL database."
+                                    .to_string(),
+                            },
+                        )));
+                    }
+                    Some(client) => {
+                        let result = { client.update_account(account, slot, is_startup) };
                         if let Err(err) = result {
                             return Err(GeyserPluginError::AccountsUpdateError {
                                 msg: format!("Failed to persist the update of account to the PostgreSQL database. Error: {:?}", err)
