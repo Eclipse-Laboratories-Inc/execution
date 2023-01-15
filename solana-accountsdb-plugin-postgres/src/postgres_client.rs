@@ -1504,14 +1504,14 @@ impl SequencePostgresClientWorker {
                         if *current_slot != request.account.slot {
                             // info!("do_work_recv slot_changed {}, {}", *current_slot, request.account.slot);
                             let smt_tree = self.smt_tree.read().unwrap();
-                            if let Err(err) = self.client.update_merkle_tree_root(*current_slot, smt_tree.root().as_slice()) {
+                            if let Err(_err) = self.client.update_merkle_tree_root(*current_slot, smt_tree.root().as_slice()) {
                                 info!("update_merkle_tree_root err");
                             }
                             *current_slot = request.account.slot;
                         } else {
                             let key_hash: H256 = request.account.key_hash();
                             let val_hash: H256 = request.account.value_hash();
-                            if let Err(err) = self.smt_tree.write().unwrap().update(key_hash, val_hash) {
+                            if let Err(_err) = self.smt_tree.write().unwrap().update(key_hash, val_hash) {
                                 info!("update_merkle_tree_key_value err");
                             }
                         }
