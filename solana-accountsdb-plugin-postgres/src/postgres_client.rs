@@ -4,6 +4,7 @@ mod postgre_client_entry;
 mod postgres_client_account_index;
 mod postgres_client_block_metadata;
 mod postgres_client_transaction;
+mod postgres_client_account_smt;
 
 /// A concurrent implementation for writing accounts into the PostgreSQL in parallel.
 use {
@@ -36,7 +37,12 @@ use {
         time::Duration,
     },
     tokio_postgres::types,
+    sparse_merkle_tree::{
+        blake2b::Blake2bHasher, default_store::DefaultStore, SparseMerkleTree, H256,
+    },
+    blake3::{self, Hash},
 };
+
 
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
 /// memory usage. The downside -- calls after this threshold is reached can get blocked.
@@ -63,6 +69,7 @@ struct PostgresSqlClientWrapper {
     bulk_insert_token_owner_index_stmt: Option<Statement>,
     bulk_insert_token_mint_index_stmt: Option<Statement>,
     log_entry_stmt: Statement,
+    update_smt_tree_stmt: Statement,
 }
 
 pub struct SimplePostgresClient {
@@ -507,6 +514,8 @@ impl SimplePostgresClient {
         }
     }
 
+
+
     /// Internal function for inserting an account into account_audit table.
     fn insert_account_audit(
         account: &DbAccountInfo,
@@ -774,6 +783,7 @@ impl SimplePostgresClient {
     pub fn new(config: &GeyserPluginPostgresConfig) -> Result<Self, GeyserPluginError> {
         info!("Creating SimplePostgresClient...");
         let mut client = Self::connect_to_db(config)?;
+        info!("connect client begin");
         let bulk_account_insert_stmt =
             Self::build_bulk_account_insert_statement(&mut client, config)?;
         let update_account_stmt = Self::build_single_account_upsert_statement(&mut client, config)?;
@@ -787,6 +797,7 @@ impl SimplePostgresClient {
         let update_block_metadata_stmt =
             Self::build_block_metadata_upsert_statement(&mut client, config)?;
         let log_entry_stmt = Self::build_entry_upsert_statement(&mut client, config)?;
+        let update_smt_tree_stmt = Self::build_smt_tree_upsert_statement(&mut client, config)?;
 
         let batch_size = config
             .batch_size
@@ -853,6 +864,7 @@ impl SimplePostgresClient {
                 bulk_insert_token_owner_index_stmt,
                 bulk_insert_token_mint_index_stmt,
                 log_entry_stmt,
+                update_smt_tree_stmt,
             }),
             index_token_owner: config.index_token_owner.unwrap_or_default(),
             index_token_mint: config.index_token_mint.unwrap_or(false),
@@ -1087,6 +1099,7 @@ impl PostgresClientWorker {
         Ok(())
     }
 }
+
 pub struct ParallelPostgresClient {
     workers: Vec<JoinHandle<Result<(), GeyserPluginError>>>,
     exit_worker: Arc<AtomicBool>,
@@ -1353,14 +1366,16 @@ impl PostgresClientBuilder {
     }
 }
 
-// SequenceClient, 1 recv, 1 worker thread
+type SMT = SparseMerkleTree<Blake2bHasher, H256, DefaultStore<H256>>;
 
+/// SequenceClient, 1 recv, 1 worker thread
+#[allow(dead_code)]
 pub struct SequencePostgresClient {
     worker: Option<JoinHandle<Result<(), GeyserPluginError>>>,
     exit_worker: Arc<AtomicBool>,
     sender: Sender<DbWorkItem>,
-    slot: Arc<RwLock<u64>>,
-    // smt_tree: Arc<RwLock<SMT>>,
+    slot: Arc<RwLock<i64>>,
+    smt_tree: Arc<RwLock<SMT>>,
 }
 
 impl SequencePostgresClient {
@@ -1371,8 +1386,10 @@ impl SequencePostgresClient {
         let exit_clone = exit_worker.clone();
         let config = config.clone();
         // let smt_tree = Arc::new(RwLock::new(SMT::default()));
-        let slot: Arc<RwLock<u64>> = Arc::new(RwLock::new(1));
+        let slot: Arc<RwLock<i64>> = Arc::new(RwLock::new(1));
         let slot_clone = slot.clone();
+        let smt_tree = Arc::new(RwLock::new(SMT::default()));
+        let smt_clone = smt_tree.clone();
         let worker = Builder::new()
             .name(format!("worker-sequence-account"))
             .spawn(move || -> Result<(), GeyserPluginError> {
@@ -1380,7 +1397,7 @@ impl SequencePostgresClient {
                     .panic_on_db_errors
                     .as_ref()
                     .unwrap_or(&DEFAULT_PANIC_ON_DB_ERROR);
-                let result = SequencePostgresClientWorker::new(config, slot_clone);
+                let result = SequencePostgresClientWorker::new(config, slot_clone, smt_clone);
 
                 match result {
                     Ok(mut worker) => {
@@ -1404,6 +1421,7 @@ impl SequencePostgresClient {
             exit_worker,
             sender,
             slot,
+            smt_tree,
         })
     }
 
@@ -1450,16 +1468,19 @@ impl SequencePostgresClient {
 
 struct SequencePostgresClientWorker {
     client: SimplePostgresClient,
+    slot: Arc<RwLock<i64>>,
+    smt_tree: Arc<RwLock<SMT>>,
 }
 
 impl SequencePostgresClientWorker {
     fn new(
         config: GeyserPluginPostgresConfig,
-        slot: Arc<RwLock<u64>>,
+        slot: Arc<RwLock<i64>>,
+        smt_tree: Arc<RwLock<SMT>>,
     ) -> Result<Self, GeyserPluginError> {
         let result = SimplePostgresClient::new(&config);
         match result {
-            Ok(client) => Ok(SequencePostgresClientWorker { client }),
+            Ok(client) => Ok(SequencePostgresClientWorker { client, slot, smt_tree }),
             Err(err) => {
                 error!("Error in creating SequencePostgresClientWorker: {}", err);
                 Err(err)
@@ -1478,7 +1499,22 @@ impl SequencePostgresClientWorker {
             match work {
                 Ok(work) => match work {
                     DbWorkItem::UpdateAccount(request) => {
-                        info!("do_work_recv {:?}", request.account);
+                        let mut current_slot = self.slot.write().unwrap();
+                        // info!("do_work_recv {}, {}", *current_slot, request.account.slot);
+                        if *current_slot != request.account.slot {
+                            // info!("do_work_recv slot_changed {}, {}", *current_slot, request.account.slot);
+                            let smt_tree = self.smt_tree.read().unwrap();
+                            if let Err(err) = self.client.update_merkle_tree_root(*current_slot, smt_tree.root().as_slice()) {
+                                info!("update_merkle_tree_root err");
+                            }
+                            *current_slot = request.account.slot;
+                        } else {
+                            let key_hash: H256 = request.account.key_hash();
+                            let val_hash: H256 = request.account.value_hash();
+                            if let Err(err) = self.smt_tree.write().unwrap().update(key_hash, val_hash) {
+                                info!("update_merkle_tree_key_value err");
+                            }
+                        }
                     }
                     _ => (),
                 },
@@ -1497,5 +1533,42 @@ impl SequencePostgresClientWorker {
             }
         }
         Ok(())
+    }
+}
+
+trait HashAccount {
+    /// hash DbAccountInfo pubkey to sparse-merkle-tree key
+    /// Todo: pure synchronous jellyfish-merkle-tree data structure with blake3 hash method
+    fn key_hash(&self) -> H256;
+
+    /// hash DbAccountInfo(without slot property) to sparse-merkle-tree value
+    fn value_hash(&self) -> H256;
+}
+
+impl HashAccount for DbAccountInfo {
+    fn key_hash(&self) -> H256 {
+        // Hash
+        let res: Hash = blake3::hash(&self.pubkey);
+        // Hash to H256
+        H256::from(*res.as_bytes())
+    }
+    fn value_hash(&self) -> H256 {
+        let mut hasher = blake3::Hasher::new();
+        if self.lamports == 0 {
+            let res = hasher.finalize();
+            return H256::from(*res.as_bytes());
+        }
+
+        hasher.update(&self.lamports.to_le_bytes());
+        hasher.update(&self.rent_epoch.to_le_bytes());
+        hasher.update(&self.data);
+
+        if self.executable {
+            hasher.update(&[1u8; 1]);
+        } else {
+            hasher.update(&[0u8; 1]);
+        }
+        let res = hasher.finalize();
+        H256::from(*res.as_bytes())
     }
 }

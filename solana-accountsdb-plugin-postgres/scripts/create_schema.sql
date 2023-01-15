@@ -29,6 +29,15 @@ CREATE TABLE slot (
     updated_on TIMESTAMP NOT NULL
 );
 
+
+CREATE TABLE merkle_tree_proof (
+    slot BIGINT NOT NULL,
+    root_hash VARCHAR(256),
+    updated_on TIMESTAMP NOT NULL
+);
+
+CREATE INDEX merkle_tree_proof_slot_index ON merkle_tree_proof (slot);
+
 -- Types for Transactions
 
 Create TYPE "TransactionErrorCode" AS ENUM (

@@ -5616,10 +5616,12 @@ dependencies = [
 name = "solana-geyser-plugin-postgres"
 version = "1.14.6"
 dependencies = [
+ "blake3",
  "bs58",
  "bytemuck",
  "chrono",
  "crossbeam-channel",
+ "hex",
  "libc",
  "libloading",
  "log",
@@ -5646,6 +5648,7 @@ dependencies = [
  "solana-sdk 1.14.6",
  "solana-streamer",
  "solana-transaction-status",
+ "sparse-merkle-tree",
  "tempfile",
  "thiserror",
  "tokio-postgres",

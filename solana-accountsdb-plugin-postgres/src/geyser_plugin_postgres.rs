@@ -24,7 +24,8 @@ use {
 #[derive(Default)]
 pub struct GeyserPluginPostgres {
     client: Option<ParallelPostgresClient>,
-    sequence_client: Option<SequencePostgresClient>, // only worker thread
+    sequence_client: Option<SequencePostgresClient>,
+    // only worker thread
     accounts_selector: Option<AccountsSelector>,
     transaction_selector: Option<TransactionSelector>,
     entry_selector: Option<EntrySelector>,
@@ -243,9 +244,9 @@ impl GeyserPlugin for GeyserPluginPostgres {
         // is configured
         if is_startup
             && self
-                .batch_starting_slot
-                .map(|slot_limit| slot < slot_limit)
-                .unwrap_or(false)
+            .batch_starting_slot
+            .map(|slot_limit| slot < slot_limit)
+            .unwrap_or(false)
         {
             return Ok(());
         }
@@ -368,7 +369,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
                 let result = client.update_slot_status(slot, parent, status);
 
                 if let Err(err) = result {
-                    return Err(GeyserPluginError::SlotStatusUpdateError{
+                    return Err(GeyserPluginError::SlotStatusUpdateError {
                         msg: format!("Failed to persist the update of slot to the PostgreSQL database. Error: {:?}", err)
                     });
                 }
@@ -392,7 +393,7 @@ impl GeyserPlugin for GeyserPluginPostgres {
                 let result = client.notify_end_of_startup();
 
                 if let Err(err) = result {
-                    return Err(GeyserPluginError::SlotStatusUpdateError{
+                    return Err(GeyserPluginError::SlotStatusUpdateError {
                         msg: format!("Failed to notify the end of startup for accounts notifications. Error: {:?}", err)
                     });
                 }
@@ -430,13 +431,13 @@ impl GeyserPlugin for GeyserPluginPostgres {
                     let result = client.log_transaction_info(transaction_info, slot);
 
                     if let Err(err) = result {
-                        return Err(GeyserPluginError::SlotStatusUpdateError{
-                                msg: format!("Failed to persist the transaction info to the PostgreSQL database. Error: {:?}", err)
-                            });
+                        return Err(GeyserPluginError::SlotStatusUpdateError {
+                            msg: format!("Failed to persist the transaction info to the PostgreSQL database. Error: {:?}", err)
+                        });
                     }
                 }
                 _ => {
-                    return Err(GeyserPluginError::SlotStatusUpdateError{
+                    return Err(GeyserPluginError::SlotStatusUpdateError {
                         msg: "Failed to persist the transaction info to the PostgreSQL database. Unsupported format.".to_string()
                     });
                 }
@@ -460,9 +461,9 @@ impl GeyserPlugin for GeyserPluginPostgres {
                     let result = client.update_block_metadata(block_info);
 
                     if let Err(err) = result {
-                        return Err(GeyserPluginError::SlotStatusUpdateError{
-                                msg: format!("Failed to persist the update of block metadata to the PostgreSQL database. Error: {:?}", err)
-                            });
+                        return Err(GeyserPluginError::SlotStatusUpdateError {
+                            msg: format!("Failed to persist the update of block metadata to the PostgreSQL database. Error: {:?}", err)
+                        });
                     }
                 }
             },
@@ -599,6 +600,8 @@ pub unsafe extern "C" fn _create_plugin() -> *mut dyn GeyserPlugin {
     Box::into_raw(plugin)
 }
 
+
+
 #[cfg(test)]
 pub(crate) mod tests {
     use {super::*, serde_json};
@@ -612,6 +615,7 @@ pub(crate) mod tests {
         let config: serde_json::Value = serde_json::from_str(config).unwrap();
         GeyserPluginPostgres::create_accounts_selector_from_config(&config);
     }
+
     #[test]
     fn test_entry_selector_from_config() {
         let config = "{\"entry_selector\" : true}}";

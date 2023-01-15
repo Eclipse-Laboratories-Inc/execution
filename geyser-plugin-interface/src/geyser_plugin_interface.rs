@@ -170,6 +170,10 @@ pub enum GeyserPluginError {
     /// Error when updating the entry.
     #[error("Error updating entry. Error message: ({msg})")]
     EntryUpdateError { msg: String },
+
+    /// Error when updating the merkle tree root.
+    #[error("Error updating smt root. Error message: ({msg})")]
+    SMTUpdateError { msg: String },
 }
 
 /// The current status of a slot
