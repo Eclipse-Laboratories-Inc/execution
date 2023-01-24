@@ -4745,14 +4745,23 @@ name = "smt-proof"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "chrono",
  "clap 2.33.3",
  "hex",
  "log",
+ "openssl",
+ "postgres",
+ "postgres-openssl",
+ "postgres-types",
+ "serde",
+ "serde_derive",
+ "serde_json",
  "solana-clap-utils",
  "solana-ledger",
  "solana-runtime",
  "solana-sdk 1.14.6",
  "sparse-merkle-tree",
+ "thiserror",
 ]
 
 [[package]]

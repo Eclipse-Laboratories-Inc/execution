@@ -42,10 +42,12 @@ use {
             atomic::{AtomicBool, Ordering},
             Arc, RwLock,
         },
+        fs::File, io::Read
     }
 };
 
 mod ledger_path;
+mod shred_replay;
 
 const DEFAULT_LEDGER_TOOL_ROCKS_FIFO_SHRED_STORAGE_SIZE_BYTES: u64 = u64::MAX;
 
@@ -92,16 +94,16 @@ fn main() {
     let matches = App::new("solana-smt-replayer")
         .about("Replayer")
         .version("0.1")
-        // .arg(
-        //     Arg::with_name("config_file")
-        //         .short("c")
-        //         .long("config")
-        //         .value_name("CONFIG")
-        //         .takes_value(true)
-        //         .required(true)
-        //         .default_value("config.json")
-        //         .help("Configuration file to use"),
-        // )
+        .arg(
+            Arg::with_name("config_file")
+                .short("c")
+                .long("config")
+                .value_name("CONFIG")
+                .takes_value(true)
+                .required(true)
+                .default_value("config.json")
+                .help("Configuration file to use"),
+        )
         .arg(
             Arg::with_name("ledger_path")
                 .short("l")
@@ -110,6 +112,16 @@ fn main() {
                 .takes_value(true)
                 .required(true)
                 .default_value("ledger")
+                .help("Use DIR as ledger location"),
+        )
+        .arg(
+            Arg::with_name("out_ledger_path")
+                .short("o")
+                .long("out_ledger")
+                .value_name("DIR")
+                .takes_value(true)
+                .required(true)
+                .default_value("/tmp/out-ledger")
                 .help("Use DIR as ledger location"),
         )
         .arg(
@@ -148,7 +160,24 @@ fn main() {
         .after_help("The default subcommand is replay")
         .get_matches();
 
+    let config_file = parse_ledger_path(&matches, "config_file");
     let ledger_path = parse_ledger_path(&matches, "ledger_path");
+    let out_ledger_path = parse_ledger_path(&matches, "out_ledger_path");
+    println!("{:?}", config_file);
+    println!("{:?}", out_ledger_path);
+
+    let mut file = File::open(config_file.as_path()).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+
+    let config: shred_replay::ReplayerPostgresConfig = serde_json::from_str(&contents)
+        .map_err(|err| shred_replay::ReplayerError::ConfigFileReadError {
+            msg: format!(
+                "The config file is not in the JSON format expected: {:?}",
+                err
+            ),
+        })
+        .unwrap();
 
     let wal_recovery_mode = matches
         .value_of("wal_recovery_mode")
@@ -169,6 +198,14 @@ fn main() {
 
     match matches.subcommand() {
         ("verify", Some(arg_matches)) => {
+
+            let mut replayer = shred_replay::Replayer::new().config(&config).ledger_path(&out_ledger_path);
+
+            if let Err(e) = replayer.connect_db() {
+                eprintln!("Failed to connect pg {}", e);
+                exit(1);
+            };
+
             let mut accounts_index_config = AccountsIndexConfig::default();
 
             let starting_slot = value_t_or_exit!(arg_matches, "starting_slot", Slot);
@@ -224,28 +261,29 @@ fn main() {
                 ..ProcessOptions::default()
             };
 
-            // TODO: replace blocktore by newone
-            let blockstore = open_blockstore(
-                &ledger_path,
-                AccessType::Secondary,
+            let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
+            if let Err(e) = replayer.init_ledger(&genesis_config) {
+                eprintln!("Failed to init new ledger{}", e);
+                exit(1);
+            };
+
+            let mut blockstore = open_blockstore(
+                &out_ledger_path,
+                AccessType::Primary,
                 wal_recovery_mode,
                 &shred_storage_type,
             );
 
-            println!("{}", 111);
+            if let Err(e) = replayer.insert_shred_endwith_slot(ending_slot, &mut blockstore) {
+                eprintln!("Failed to insert shred in pg: {}", e);
+                exit(1);
+            };
 
             let result = load_bank_forks(
-                // arg_matches,
-                &open_genesis_config_by(&ledger_path, arg_matches),
+                &genesis_config,
                 &blockstore,
                 process_options,
-                // snapshot_archive_path,
-                // incremental_snapshot_archive_path,
             );
-                // .unwrap_or_else(|err| {
-                //     eprintln!("Ledger verification failed: {:?}", err);
-                //     exit(1);
-                // });
 
             println!("{}", result.is_ok());
         }
@@ -291,50 +329,12 @@ fn hardforks_of(matches: &ArgMatches<'_>, name: &str) -> Option<Vec<Slot>> {
 }
 
 fn load_bank_forks(
-    // arg_matches: &ArgMatches,
     genesis_config: &GenesisConfig,
     blockstore: &Blockstore,
     process_options: ProcessOptions,
-    // snapshot_archive_path: Option<PathBuf>,
-    // incremental_snapshot_archive_path: Option<PathBuf>,
 ) -> Result<Arc<RwLock<BankForks>>, BlockstoreProcessorError> {
-    // let bank_snapshots_dir = blockstore
-    //     .ledger_path()
-    //     .join(if blockstore.is_primary_access() {
-    //         "snapshot"
-    //     } else {
-    //         "snapshot.ledger-tool"
-    //     });
 
     let starting_slot = 0; // default start check with genesis
-    // let snapshot_config = if arg_matches.is_present("no_snapshot") {
-    //     None
-    // } else {
-    //     let full_snapshot_archives_dir =
-    //         snapshot_archive_path.unwrap_or_else(|| blockstore.ledger_path().to_path_buf());
-    //     let incremental_snapshot_archives_dir =
-    //         incremental_snapshot_archive_path.unwrap_or_else(|| full_snapshot_archives_dir.clone());
-    //     if let Some(full_snapshot_slot) =
-    //         snapshot_utils::get_highest_full_snapshot_archive_slot(&full_snapshot_archives_dir)
-    //     {
-    //         let incremental_snapshot_slot =
-    //             snapshot_utils::get_highest_incremental_snapshot_archive_slot(
-    //                 &incremental_snapshot_archives_dir,
-    //                 full_snapshot_slot,
-    //             )
-    //                 .unwrap_or_default();
-    //         starting_slot = std::cmp::max(full_snapshot_slot, incremental_snapshot_slot);
-    //     }
-    //
-    //     Some(SnapshotConfig {
-    //         full_snapshot_archive_interval_slots: Slot::MAX,
-    //         incremental_snapshot_archive_interval_slots: Slot::MAX,
-    //         full_snapshot_archives_dir,
-    //         incremental_snapshot_archives_dir,
-    //         bank_snapshots_dir,
-    //         ..SnapshotConfig::default()
-    //     })
-    // };
 
     if let Some(halt_slot) = process_options.halt_at_slot {
         // Check if we have the slot data necessary to replay from starting_slot to >= halt_slot.
