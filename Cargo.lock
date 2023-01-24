@@ -4745,7 +4745,12 @@ name = "smt-proof"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "clap 2.33.3",
  "hex",
+ "log",
+ "solana-clap-utils",
+ "solana-ledger",
+ "solana-runtime",
  "solana-sdk 1.14.6",
  "sparse-merkle-tree",
 ]
