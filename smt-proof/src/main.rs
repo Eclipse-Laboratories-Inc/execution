@@ -23,6 +23,7 @@ use {
         accounts_background_service::{
             AbsRequestHandler, AbsRequestSender, AccountsBackgroundService,
         },
+        accounts_update_notifier_interface::AccountsUpdateNotifier,
         accounts_db::{AccountsDbConfig, FillerAccountsConfig},
         accounts_index::{AccountsIndexConfig},
         bank_forks::BankForks,
@@ -48,6 +49,7 @@ use {
 
 mod ledger_path;
 mod shred_replay;
+mod account_notifier;
 
 const DEFAULT_LEDGER_TOOL_ROCKS_FIFO_SHRED_STORAGE_SIZE_BYTES: u64 = u64::MAX;
 
@@ -371,6 +373,10 @@ fn load_bank_forks(
     };
 
     let snapshot_config = None;
+    let accounts_update_notifier : Option<AccountsUpdateNotifier> = {
+        let accounts_update_notifier = account_notifier::AccountsUpdateNotifierImpl::new();
+        Some(Arc::new(RwLock::new(accounts_update_notifier)))
+    };
     let (bank_forks, leader_schedule_cache, ..) =
         bank_forks_utils::load_bank_forks(
             genesis_config,
@@ -380,7 +386,7 @@ fn load_bank_forks(
             snapshot_config.as_ref(),
             &process_options,
             None,
-            None,
+            accounts_update_notifier
         );
 
     let pruned_banks_receiver =
