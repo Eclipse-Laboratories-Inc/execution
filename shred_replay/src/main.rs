@@ -9,7 +9,7 @@ use {
 };
 
 fn main() {
-    let matches = App::new("solana-replayer")
+    let matches = App::new("solana-shred-replayer")
         .about("Replayer")
         .version("0.1")
         .arg(

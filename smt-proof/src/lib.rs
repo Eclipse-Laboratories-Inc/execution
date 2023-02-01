@@ -1,3 +1,4 @@
+
 /// SparseMerkleTree api
 /// 1. new
 /// 2. updates
