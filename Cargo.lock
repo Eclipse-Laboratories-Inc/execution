@@ -4747,6 +4747,7 @@ dependencies = [
  "blake3",
  "chrono",
  "clap 2.33.3",
+ "crossbeam-channel",
  "hex",
  "log",
  "openssl",

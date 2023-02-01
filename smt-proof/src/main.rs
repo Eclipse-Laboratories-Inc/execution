@@ -3,7 +3,7 @@ use {
     crate::ledger_path::parse_ledger_path,
     clap::{
         value_t, value_t_or_exit, values_t_or_exit, App,
-        Arg, ArgMatches, SubCommand
+        Arg, ArgMatches, SubCommand,
     },
     solana_sdk::{
         clock::Slot,
@@ -43,8 +43,8 @@ use {
             atomic::{AtomicBool, Ordering},
             Arc, RwLock,
         },
-        fs::File, io::Read
-    }
+        fs::File, io::Read,
+    },
 };
 
 mod ledger_path;
@@ -54,14 +54,13 @@ mod account_notifier;
 const DEFAULT_LEDGER_TOOL_ROCKS_FIFO_SHRED_STORAGE_SIZE_BYTES: u64 = u64::MAX;
 
 fn main() {
-
     let starting_slot_arg = Arg::with_name("starting_slot")
-            .long("starting_slot")
-            .value_name("SLOT")
-            .takes_value(true)
-            .required(true)
-            .default_value("0")
-            .help("Start at this slot");
+        .long("starting_slot")
+        .value_name("SLOT")
+        .takes_value(true)
+        .required(true)
+        .default_value("0")
+        .help("Start at this slot");
     let ending_slot_arg = Arg::with_name("ending_slot")
         .long("ending_slot")
         .value_name("SLOT")
@@ -200,7 +199,6 @@ fn main() {
 
     match matches.subcommand() {
         ("verify", Some(arg_matches)) => {
-
             let mut replayer = shred_replay::Replayer::new().config(&config).ledger_path(&out_ledger_path);
 
             if let Err(e) = replayer.connect_db() {
@@ -281,17 +279,23 @@ fn main() {
                 exit(1);
             };
 
+            // account_notifier
+            let accounts_update_notifier: Option<AccountsUpdateNotifier> = {
+                // init smt and pg client
+                let mut accounts_update_notifier = account_notifier::AccountsUpdateNotifierImpl::new(&config);
+                Some(Arc::new(RwLock::new(accounts_update_notifier)))
+            };
+
             let result = load_bank_forks(
                 &genesis_config,
                 &blockstore,
                 process_options,
+                accounts_update_notifier,
             );
 
             println!("{}", result.is_ok());
         }
-        _ => {
-
-        }
+        _ => {}
     }
 }
 
@@ -334,8 +338,8 @@ fn load_bank_forks(
     genesis_config: &GenesisConfig,
     blockstore: &Blockstore,
     process_options: ProcessOptions,
+    accounts_update_notifier: Option<AccountsUpdateNotifier>,
 ) -> Result<Arc<RwLock<BankForks>>, BlockstoreProcessorError> {
-
     let starting_slot = 0; // default start check with genesis
 
     if let Some(halt_slot) = process_options.halt_at_slot {
@@ -351,32 +355,29 @@ fn load_bank_forks(
     }
 
     let account_paths =
-    {
-        let non_primary_accounts_path = blockstore.ledger_path().join("accounts.ledger-tool");
-        info!(
+        {
+            let non_primary_accounts_path = blockstore.ledger_path().join("accounts.ledger-tool");
+            info!(
             "Default accounts path is switched aligning with Blockstore's secondary access: {:?}",
             non_primary_accounts_path
         );
 
-        if non_primary_accounts_path.exists() {
-            info!("Clearing {:?}", non_primary_accounts_path);
-            if let Err(err) = std::fs::remove_dir_all(&non_primary_accounts_path) {
-                eprintln!(
-                    "error deleting accounts path {:?}: {}",
-                    non_primary_accounts_path, err
-                );
-                exit(1);
+            if non_primary_accounts_path.exists() {
+                info!("Clearing {:?}", non_primary_accounts_path);
+                if let Err(err) = std::fs::remove_dir_all(&non_primary_accounts_path) {
+                    eprintln!(
+                        "error deleting accounts path {:?}: {}",
+                        non_primary_accounts_path, err
+                    );
+                    exit(1);
+                }
             }
-        }
 
-        vec![non_primary_accounts_path]
-    };
+            vec![non_primary_accounts_path]
+        };
 
     let snapshot_config = None;
-    let accounts_update_notifier : Option<AccountsUpdateNotifier> = {
-        let accounts_update_notifier = account_notifier::AccountsUpdateNotifierImpl::new();
-        Some(Arc::new(RwLock::new(accounts_update_notifier)))
-    };
+
     let (bank_forks, leader_schedule_cache, ..) =
         bank_forks_utils::load_bank_forks(
             genesis_config,
@@ -386,7 +387,7 @@ fn load_bank_forks(
             snapshot_config.as_ref(),
             &process_options,
             None,
-            accounts_update_notifier
+            accounts_update_notifier,
         );
 
     let pruned_banks_receiver =

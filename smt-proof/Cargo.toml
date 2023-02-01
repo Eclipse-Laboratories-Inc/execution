@@ -24,3 +24,4 @@ solana-ledger = { path = "../ledger", version = "=1.14.6" }
 solana-runtime= {  path = "../runtime", version = "=1.14.6" }
 chrono = { version = "0.4.11", features = ["serde"] }
 openssl = { version = "0.10" }
+crossbeam-channel = "0.5.6"
