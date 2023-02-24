@@ -6,13 +6,13 @@ use {
         max_slots::MaxSlots,
     },
     solana_ledger::{
-        blockstore::Blockstore,
-        blockstore_processor::{BlockstoreProcessorError, ProcessOptions},
+        blockstore::{Blockstore, BlockstoreSignals},
+        blockstore_options::BlockstoreOptions,
+        blockstore_processor::{ProcessOptions},
         bank_forks_utils,
         leader_schedule_cache::LeaderScheduleCache,
         genesis_utils::{create_genesis_config, GenesisConfigInfo},
     },
-    solana_runtime::hardened_unpack::{open_genesis_config, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE},
     solana_client::rpc_config::RpcContextConfig,
     solana_client::{connection_cache::ConnectionCache, rpc_cache::LargestAccountsCache},
     solana_gossip::{
@@ -21,9 +21,13 @@ use {
         crds::GossipRoute,
         crds_value::{CrdsData, CrdsValue, SnapshotHashes},
     },
-    solana_runtime::{bank::Bank, bank_forks::BankForks, commitment::BlockCommitmentCache,},
+    solana_runtime::{
+        hardened_unpack::{open_genesis_config, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE},
+        bank::Bank, bank_forks::BankForks, commitment::BlockCommitmentCache, snapshot_config::SnapshotConfig,
+    },
     
     solana_sdk::{
+        clock::Slot,
         genesis_config::{ClusterType, DEFAULT_GENESIS_ARCHIVE},
         signature::Signer,
         signer::keypair::Keypair,
@@ -41,29 +45,44 @@ use {
         thread::{self, Builder, JoinHandle},
         net::{IpAddr, Ipv4Addr, SocketAddr},
     },
-    solana_net_utils,
 };
 
 // 1. slot, height is 0
-// 2. "Method not found" for some RPC, e.g. getSupply, getSlotLeader.
+// 2. 'Method not found' for some RPC, e.g. getSupply, getSlotLeader.
 fn main() {
-    let ledger_path = Path::new("./test-ledger");
+    let ledger_path = Path::new("test-ledger");
     let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
     let blockstore = Arc::new(Blockstore::open(&ledger_path).unwrap());
-
-    let account_paths = vec![PathBuf::new()];
+    let non_primary_accounts_path = blockstore.ledger_path().join("accounts");
+    let account_paths = vec![non_primary_accounts_path];
     let process_options = ProcessOptions::default();
+    let snapshot_config = SnapshotConfig {
+        full_snapshot_archive_interval_slots: 100,
+        incremental_snapshot_archive_interval_slots: Slot::MAX,
+        bank_snapshots_dir: ledger_path.join("snapshot"),
+        full_snapshot_archives_dir: ledger_path.to_path_buf(),
+        incremental_snapshot_archives_dir: ledger_path.to_path_buf(),
+        ..SnapshotConfig::default()
+    };
+
     let (bank_forks, _leader_schedule_cache, ..) =
         bank_forks_utils::load_bank_forks(
             &genesis_config,
             &blockstore,
             account_paths,
             None,
-            None,
+            Some(&snapshot_config),
             &process_options,
             None,
             None,
         );
+
+    {
+        // let working_bank = bank_forks.read().unwrap().working_bank();
+        // working_bank.print_accounts_stats();
+        let bank = bank_forks.read().unwrap().get(90);
+        println!("bank is valid: {}", bank.is_some());
+    }
 
     let exit = Arc::new(AtomicBool::new(false));
     let validator_exit = create_validator_exit(&exit);
@@ -78,21 +97,28 @@ fn main() {
         8899,
     );
     
-    let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::default()));
+    let mut block_commitment_cache = BlockCommitmentCache::default();
+    let bank_forks_guard = bank_forks.read().unwrap();
+    block_commitment_cache.initialize_slots(
+        bank_forks_guard.working_bank().slot(),
+        bank_forks_guard.root(),
+    );
+    println!("{:?}", block_commitment_cache);
+    let block_commitment_cache = Arc::new(RwLock::new(block_commitment_cache));
     let optimistically_confirmed_bank =
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
     let connection_cache = Arc::new(ConnectionCache::default());
     let rpc_service = JsonRpcService::new(
         rpc_addr,
         JsonRpcConfig::default(),
-        None,
-        bank_forks,
+        Some(snapshot_config),
+        bank_forks.clone(),
         block_commitment_cache,
         blockstore,
         cluster_info,
         None,
-        Hash::default(),
-        &PathBuf::from("farf"),
+        genesis_config.hash(),
+        &ledger_path,
         validator_exit,
         None,
         Arc::new(AtomicBool::new(false)),

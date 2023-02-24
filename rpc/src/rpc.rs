@@ -5122,6 +5122,22 @@ pub mod tests {
     }
 
     #[test]
+    fn test_rpc_get_slot() {
+        let rpc = RpcHandler::start();
+        let request = create_test_request("getSlot", None);
+        let response = rpc.handle_request_sync(request);
+        println!("response: {:?}", response);
+    }
+
+    #[test]
+    fn test_rpc_get_height() {
+        let rpc = RpcHandler::start();
+        let request = create_test_request("getBlockHeight", None);
+        let response = rpc.handle_request_sync(request);
+        println!("response: {:?}", response);
+    }
+
+    #[test]
     fn test_rpc_get_tx_count() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let genesis = create_genesis_config(10);
