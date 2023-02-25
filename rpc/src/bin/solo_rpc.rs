@@ -110,7 +110,11 @@ fn main() {
     let connection_cache = Arc::new(ConnectionCache::default());
     let rpc_service = JsonRpcService::new(
         rpc_addr,
-        JsonRpcConfig::default(),
+        JsonRpcConfig{
+            enable_rpc_transaction_history: true,
+            full_api: true,
+            ..JsonRpcConfig::default()
+        },
         Some(snapshot_config),
         bank_forks.clone(),
         block_commitment_cache,
