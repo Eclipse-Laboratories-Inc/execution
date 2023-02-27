@@ -47,8 +47,6 @@ use {
     },
 };
 
-// 1. slot, height is 0
-// 2. 'Method not found' for some RPC, e.g. getSupply, getSlotLeader.
 fn main() {
     let ledger_path = Path::new("test-ledger");
     let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
@@ -77,13 +75,6 @@ fn main() {
             None,
         );
 
-    {
-        // let working_bank = bank_forks.read().unwrap().working_bank();
-        // working_bank.print_accounts_stats();
-        let bank = bank_forks.read().unwrap().get(90);
-        println!("bank is valid: {}", bank.is_some());
-    }
-
     let exit = Arc::new(AtomicBool::new(false));
     let validator_exit = create_validator_exit(&exit);
     let cluster_info = Arc::new(ClusterInfo::new(
@@ -99,12 +90,12 @@ fn main() {
     
     let mut block_commitment_cache = BlockCommitmentCache::default();
     let bank_forks_guard = bank_forks.read().unwrap();
-    block_commitment_cache.initialize_slots(
+    block_commitment_cache.set_all_slots(
         bank_forks_guard.working_bank().slot(),
         bank_forks_guard.root(),
     );
-    println!("{:?}", block_commitment_cache);
     let block_commitment_cache = Arc::new(RwLock::new(block_commitment_cache));
+
     let optimistically_confirmed_bank =
         OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
     let connection_cache = Arc::new(ConnectionCache::default());
