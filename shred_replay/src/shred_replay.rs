@@ -60,6 +60,7 @@ pub struct Replayer {
     client: Option<Client>,
     config: Option<ReplayerPostgresConfig>,
     ledger_path: Option<PathBuf>,
+    genesis_path: Option<PathBuf>,
     blockstore: Option<Blockstore>,
 }
 
@@ -69,6 +70,7 @@ impl Replayer {
             client: None,
             config: None,
             ledger_path: None,
+            genesis_path: None,
             blockstore: None,
         }
     }
@@ -80,6 +82,11 @@ impl Replayer {
 
     pub fn ledger_path(mut self, ledger_path: &PathBuf) -> Self {
         self.ledger_path = Some(ledger_path.clone());
+        self
+    }
+
+    pub fn genesis_path(mut self, genesis_path: &PathBuf) -> Self {
+        self.genesis_path = Some(genesis_path.clone());
         self
     }
 
@@ -106,8 +113,8 @@ impl Replayer {
         if self.ledger_path.as_ref().unwrap().exists() {
         } else {
             // let genesis_config = create_genesis_config(100).genesis_config;
-            let origin_legder_path = Path::new("/tmp/test-ledger");
-            let genesis_config = GenesisConfig::load(origin_legder_path).unwrap();
+            // let origin_legder_path = Path::new("./test-ledger");
+            let genesis_config = GenesisConfig::load(&self.genesis_path.as_ref().unwrap().as_path()).unwrap();
             let _last_hash = blockstore::create_new_ledger(
                 self.ledger_path.as_ref().unwrap().as_path(),
                 &genesis_config,

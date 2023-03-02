@@ -32,6 +32,25 @@ fn main() {
                 .default_value("ledger")
                 .help("Use DIR as ledger location"),
         )
+        .arg(
+            Arg::with_name("genesis_path")
+                .short("g")
+                .long("genesis")
+                .value_name("GENESIS_PATH")
+                .takes_value(true)
+                .required(true)
+                .default_value("ledger")
+                .help("Use GENESIS_PATH as genesis path"),
+        )
+        .arg(
+            Arg::with_name("last_slot")
+                .long("slot")
+                .value_name("SLOT")
+                .takes_value(true)
+                .required(true)
+                .default_value("1")
+                .help("Use SLOT as last slot"),
+        )
         .after_help("The default subcommand is replay")
         .subcommand(SubCommand::with_name("replay").about("replay shred and update ledger"))
         .subcommand(SubCommand::with_name("verify").about("Replay shred and verify the ledger"))
@@ -40,6 +59,8 @@ fn main() {
 
     let config_file = value_t_or_exit!(matches, "config_file", PathBuf);
     let ledger_path = value_t_or_exit!(matches, "ledger_path", PathBuf);
+    let genesis_path = value_t_or_exit!(matches, "genesis_path", PathBuf);
+    let last_slot = value_t_or_exit!(matches, "last_slot", u64);
 
     let mut file = File::open(config_file.as_path()).unwrap();
     let mut contents = String::new();
@@ -54,7 +75,7 @@ fn main() {
         })
         .unwrap();
 
-    let mut replayer = Replayer::new().config(&config).ledger_path(&ledger_path);
+    let mut replayer = Replayer::new().config(&config).ledger_path(&ledger_path).genesis_path(&genesis_path);
 
     if let Err(e) = replayer.connect_db() {
         error!("{}", e);
@@ -65,7 +86,8 @@ fn main() {
     if let Err(e) = replayer.setup_blockstore() {
         error!("{}", e);
     };
-    let slot = 1u64;
+    let slot = last_slot;
+    println!("insert slot below: {}", last_slot);
     if let Err(e) = replayer.insert_shred_endwith_slot(slot) {
         error!("{}", e);
     }
