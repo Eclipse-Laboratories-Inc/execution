@@ -1,4 +1,5 @@
 use {
+    clap::{value_t_or_exit, App, Arg, SubCommand},
     solana_client::rpc_config::RpcContextConfig,
     solana_client::{connection_cache::ConnectionCache, rpc_cache::LargestAccountsCache},
     solana_gossip::{
@@ -28,6 +29,7 @@ use {
         commitment::BlockCommitmentCache,
         hardened_unpack::{open_genesis_config, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE},
         snapshot_config::SnapshotConfig,
+        snapshot_utils,
     },
     solana_sdk::{
         clock::Slot,
@@ -52,8 +54,24 @@ use {
 };
 
 fn main() {
+    let matches = App::new("solana-verifier-rpc")
+        .about("Verifier-RPC")
+        .version("0.1")
+        .arg(
+            Arg::with_name("ledger_path")
+                .short("l")
+                .long("ledger")
+                .value_name("DIR")
+                .takes_value(true)
+                .required(true)
+                .default_value("ledger")
+                .help("Use DIR as ledger location"),
+        )
+        .get_matches();
+
     let start = Instant::now();
-    let ledger_path = Path::new("test-ledger");
+    // let ledger_path = Path::new("test-ledger");
+    let ledger_path = value_t_or_exit!(matches, "ledger_path", PathBuf);
     let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
     let blockstore = Arc::new(
         Blockstore::open_with_options(
@@ -69,8 +87,8 @@ fn main() {
     let account_paths = vec![non_primary_accounts_path];
     let process_options = ProcessOptions::default();
     let snapshot_config = SnapshotConfig {
-        full_snapshot_archive_interval_slots: 100,
-        incremental_snapshot_archive_interval_slots: Slot::MAX,
+        full_snapshot_archive_interval_slots: snapshot_utils::DEFAULT_FULL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
+        incremental_snapshot_archive_interval_slots: snapshot_utils::DEFAULT_INCREMENTAL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
         bank_snapshots_dir: ledger_path.join("snapshot"),
         full_snapshot_archives_dir: ledger_path.to_path_buf(),
         incremental_snapshot_archives_dir: ledger_path.to_path_buf(),
