@@ -128,17 +128,26 @@ impl Replayer {
     /// load shred from postgres by slot, order by index asc
     fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
         let mut shreds: Vec<Shred> = Vec::new();
-        let stmt = "SELECT slot, entry_index, entry FROM entry where slot <= $1";
+        let stmt = "SELECT slot, entry_index, entry FROM entry where slot = $1 ORDER BY entry_index ASC";
         let client = self.client.as_mut().unwrap();
         let stmt = client.prepare(stmt).unwrap();
 
+        // let mut cur_slot = 1;
+
         let result = client.query(&stmt, &[&(slot as i64)]);
-        if result.is_err() {}
+        if result.is_err() {
+            println!("query error for slot: {}", slot);
+        }
 
         for row in result.unwrap() {
+            let s: i64 = row.get(0);
+            let ei: i64 = row.get(1);
+            println!("slot: {}, entry_index: {}", s, ei);
             let payload: Vec<u8> = row.get(2);
             let result = Shred::new_from_serialized_shred(payload);
-            if result.is_err() {}
+            if result.is_err() {
+                println!("serialize shred error for slot: {}", slot);
+            }
             shreds.push(result.unwrap());
         }
         shreds
@@ -156,12 +165,24 @@ impl Replayer {
 
     /// Query shred by slot and update blockstore.
     pub fn insert_shred_endwith_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
-        let shreds = self.load_shred_from_pg(slot);
-        self.blockstore
-            .as_mut()
-            .unwrap()
-            .insert_shreds(shreds, None, false)
-            .map_err(|_| ReplayerError::InsertShredError)?;
+        let mut cur_slot = 1;
+        loop {
+            let shreds = self.load_shred_from_pg(cur_slot);
+            shreds.into_iter().for_each(|s| {
+                let res = self.blockstore
+                    .as_mut()
+                    .unwrap()
+                    .insert_shreds(vec![s], None, false);
+                if res.is_err() {
+                    println!("insert failed at slot: {}", cur_slot);
+                }
+            });
+
+            if cur_slot >= slot {
+                break;
+            }
+            cur_slot += 1;
+        }
         Ok(())
     }
 }

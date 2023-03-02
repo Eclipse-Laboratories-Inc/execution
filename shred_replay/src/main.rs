@@ -89,7 +89,7 @@ fn main() {
     let slot = last_slot;
     println!("insert slot below: {}", last_slot);
     if let Err(e) = replayer.insert_shred_endwith_slot(slot) {
-        error!("{}", e);
+        error!("insert_shred_endwith_slot error: {}", e);
     }
 
     // Execute subcommand.
