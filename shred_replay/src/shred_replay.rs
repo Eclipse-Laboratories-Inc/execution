@@ -60,15 +60,19 @@ pub struct Replayer {
     client: Option<Client>,
     config: Option<ReplayerPostgresConfig>,
     ledger_path: Option<PathBuf>,
+    genesis_path: Option<PathBuf>,
     blockstore: Option<Blockstore>,
 }
 
 impl Replayer {
+    const VERIFY_INTERVAL_SLOTS: i64 = 50;
+
     pub fn new() -> Self {
         Self {
             client: None,
             config: None,
             ledger_path: None,
+            genesis_path: None,
             blockstore: None,
         }
     }
@@ -80,6 +84,11 @@ impl Replayer {
 
     pub fn ledger_path(mut self, ledger_path: &PathBuf) -> Self {
         self.ledger_path = Some(ledger_path.clone());
+        self
+    }
+
+    pub fn genesis_path(mut self, genesis_path: &PathBuf) -> Self {
+        self.genesis_path = Some(genesis_path.clone());
         self
     }
 
@@ -106,8 +115,9 @@ impl Replayer {
         if self.ledger_path.as_ref().unwrap().exists() {
         } else {
             // let genesis_config = create_genesis_config(100).genesis_config;
-            let origin_legder_path = Path::new("/tmp/test-ledger");
-            let genesis_config = GenesisConfig::load(origin_legder_path).unwrap();
+            // let origin_legder_path = Path::new("./test-ledger");
+            let genesis_config =
+                GenesisConfig::load(&self.genesis_path.as_ref().unwrap().as_path()).unwrap();
             let _last_hash = blockstore::create_new_ledger(
                 self.ledger_path.as_ref().unwrap().as_path(),
                 &genesis_config,
@@ -121,20 +131,50 @@ impl Replayer {
     /// load shred from postgres by slot, order by index asc
     fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
         let mut shreds: Vec<Shred> = Vec::new();
-        let stmt = "SELECT slot, entry_index, entry FROM entry where slot <= $1";
+        let stmt =
+            "SELECT slot, entry_index, entry FROM entry where slot = $1 ORDER BY entry_index ASC";
         let client = self.client.as_mut().unwrap();
         let stmt = client.prepare(stmt).unwrap();
 
+        // let mut cur_slot = 1;
+
         let result = client.query(&stmt, &[&(slot as i64)]);
-        if result.is_err() {}
+        if result.is_err() {
+            println!("query error for slot: {}", slot);
+        }
 
         for row in result.unwrap() {
+            let s: i64 = row.get(0);
+            let ei: i64 = row.get(1);
+            println!("slot: {}, entry_index: {}", s, ei);
             let payload: Vec<u8> = row.get(2);
             let result = Shred::new_from_serialized_shred(payload);
-            if result.is_err() {}
+            if result.is_err() {
+                println!("serialize shred error for slot: {}", slot);
+            }
             shreds.push(result.unwrap());
         }
         shreds
+    }
+
+    pub fn query_last_verified_slot(&mut self) -> Option<u64> {
+        let stmt = "SELECT slot, entry_index FROM replay ORDER BY slot DESC LIMIT 1";
+        let client = self.client.as_mut().unwrap();
+        let stmt = client.prepare(stmt).unwrap();
+        let result = client.query(&stmt, &[]);
+        if result.is_err() {
+            println!("query replay record failed: {:?}", result.err());
+            return None;
+        }
+
+        if result.as_ref().unwrap().is_empty() {
+            return None;
+        }
+
+        let row = &result.unwrap()[0];
+        let slot: i64 = row.get(0);
+
+        Some(slot as u64)
     }
 
     pub fn setup_blockstore(&mut self) -> Result<(), ReplayerError> {
@@ -149,12 +189,114 @@ impl Replayer {
 
     /// Query shred by slot and update blockstore.
     pub fn insert_shred_endwith_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
-        let shreds = self.load_shred_from_pg(slot);
-        self.blockstore
-            .as_mut()
+        let mut cur_slot = 1;
+        loop {
+            let shreds = self.load_shred_from_pg(cur_slot);
+            shreds.into_iter().for_each(|s| {
+                let res = self
+                    .blockstore
+                    .as_mut()
+                    .unwrap()
+                    .insert_shreds(vec![s], None, false);
+                if res.is_err() {
+                    println!("insert failed at slot: {}", cur_slot);
+                }
+            });
+
+            if cur_slot >= slot {
+                break;
+            }
+            cur_slot += 1;
+        }
+        Ok(())
+    }
+
+    pub fn insert_shred_startwith_slot(&mut self, slot: u64) -> Result<(), ReplayerError> {
+        let mut verified: i64 = (slot - 1) as i64;
+        let mut cur_slot: i64 = slot as i64;
+        let ledger_path = self
+            .ledger_path
+            .as_ref()
             .unwrap()
-            .insert_shreds(shreds, None, false)
-            .map_err(|_| ReplayerError::InsertShredError)?;
+            .as_path()
+            .display()
+            .to_string();
+        let entry_index = 0_i64;
+        loop {
+            let mut flag = true;
+            let shreds = self.load_shred_from_pg(cur_slot as u64);
+            if shreds.is_empty() {
+                // no more new shred available
+                println!(
+                    "[{:?}]No more new shred available at slot {} ",
+                    chrono::offset::Utc::now(),
+                    cur_slot
+                );
+
+                // in case cur_slot is restart point, we try next slot.
+                let shreds = self.load_shred_from_pg((cur_slot + 1) as u64);
+                if !shreds.is_empty() {
+                    cur_slot += 1;
+
+                    continue;
+                }
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                continue;
+            }
+            shreds.into_iter().for_each(|s| {
+                let res = self
+                    .blockstore
+                    .as_mut()
+                    .unwrap()
+                    .insert_shreds(vec![s], None, false);
+                if res.is_err() {
+                    println!("insert shred failed at slot: {}", cur_slot);
+                    flag = false;
+                }
+            });
+
+            if !flag {
+                break;
+            }
+
+            // Every VERIFY_INTERVAL_SLOTS slot we do a create-snapshot and verify.
+            if cur_slot == verified + Self::VERIFY_INTERVAL_SLOTS {
+                // create snapshot first
+                let cs_out = run_ledger_tool(&[
+                    "-l",
+                    &ledger_path,
+                    "create-snapshot",
+                    &cur_slot.to_string(),
+                    &ledger_path,
+                ]);
+                if !cs_out.status.success() {
+                    println!("create snapshot failed for slot: {}", cur_slot);
+                    println!("{:?}", cs_out);
+                    break;
+                }
+
+                // then verify
+                let v_out = run_ledger_tool(&["-l", &ledger_path, "verify"]);
+                if !v_out.status.success() {
+                    println!("verify replay ledger failed at slot: {}", cur_slot);
+                    println!("{:?}", v_out);
+                    break;
+                }
+
+                // all good? save slot in record db
+                let client = self.client.as_mut().unwrap();
+                client
+                    .execute(
+                        "INSERT INTO replay (slot, entry_index) VALUES ($1, $2)",
+                        &[&cur_slot, &entry_index],
+                    )
+                    .unwrap();
+
+                verified = cur_slot;
+            }
+            cur_slot += 1;
+        }
+
         Ok(())
     }
 }

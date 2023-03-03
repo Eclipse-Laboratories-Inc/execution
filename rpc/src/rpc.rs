@@ -4472,7 +4472,7 @@ fn sanitize_transaction(
     .map_err(|err| Error::invalid_params(format!("invalid transaction: {}", err)))
 }
 
-pub(crate) fn create_validator_exit(exit: &Arc<AtomicBool>) -> Arc<RwLock<Exit>> {
+pub fn create_validator_exit(exit: &Arc<AtomicBool>) -> Arc<RwLock<Exit>> {
     let mut validator_exit = Exit::default();
     let exit_ = exit.clone();
     validator_exit.register_exit(Box::new(move || exit_.store(true, Ordering::Relaxed)));
@@ -5119,6 +5119,22 @@ pub mod tests {
         let result: String = parse_success_result(rpc.handle_request_sync(request));
         let expected = rpc.leader_pubkey().to_string();
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_rpc_get_slot() {
+        let rpc = RpcHandler::start();
+        let request = create_test_request("getSlot", None);
+        let response = rpc.handle_request_sync(request);
+        println!("response: {:?}", response);
+    }
+
+    #[test]
+    fn test_rpc_get_height() {
+        let rpc = RpcHandler::start();
+        let request = create_test_request("getBlockHeight", None);
+        let response = rpc.handle_request_sync(request);
+        println!("response: {:?}", response);
     }
 
     #[test]
