@@ -257,3 +257,7 @@ $audit_account_update$ LANGUAGE plpgsql;
 CREATE TRIGGER account_update_trigger AFTER UPDATE OR DELETE ON account
     FOR EACH ROW EXECUTE PROCEDURE audit_account_update();
 
+CREATE TABLE IF NOT EXISTS replay (
+    slot    BIGINT NOT NULL,
+    entry_index  BIGINT NOT NULL
+); 
