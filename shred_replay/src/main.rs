@@ -42,10 +42,10 @@ fn main() {
                 .default_value("ledger")
                 .help("Use GENESIS_PATH as genesis path"),
         )
-        .after_help("The default subcommand is replay")
-        .subcommand(SubCommand::with_name("replay").about("replay shred and update ledger"))
-        .subcommand(SubCommand::with_name("verify").about("Replay shred and verify the ledger"))
-        .subcommand(SubCommand::with_name("hash").about("Replay shred and generate bank hash"))
+        // .after_help("The default subcommand is replay")
+        // .subcommand(SubCommand::with_name("replay").about("replay shred and update ledger"))
+        // .subcommand(SubCommand::with_name("verify").about("Replay shred and verify the ledger"))
+        // .subcommand(SubCommand::with_name("hash").about("Replay shred and generate bank hash"))
         .get_matches();
 
     let config_file = value_t_or_exit!(matches, "config_file", PathBuf);

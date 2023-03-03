@@ -259,7 +259,7 @@ impl Replayer {
                 break;
             }
 
-            // Every 10 slot we do a create-snapshot and verify.
+            // Every VERIFY_INTERVAL_SLOTS slot we do a create-snapshot and verify.
             if cur_slot == verified + Self::VERIFY_INTERVAL_SLOTS {
                 // create snapshot first
                 let cs_out = run_ledger_tool(&[
