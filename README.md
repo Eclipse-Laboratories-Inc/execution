@@ -48,6 +48,8 @@ graph TD
 
 #### Execution flow of Execution Layer
 
+##### Execution Node
+
 * The execution node produce blocks, we use [accountsdb-plugin-postgres](./solana-accountsdb-plugin-postgres) to save blocks into PostgreSQL database.
   
   Instructions:
@@ -125,25 +127,29 @@ graph TD
     
     Now our test validator start producing blocks, and all these data saved in PostgreSQL.
 
-* Start verification node with `--no-voting` flag, then verification node querys shred from database, replay and verify.
-  ```shell=
-  # replay shred and verify the blockstore
-  shred-replay-service -c <pgconfig_path.json> -l <ledger_path> verify
-  
-  # replay shred and generate bank hash.
-  shred-replay-service -c <pgconfig_path.json> -l <ledger_path> bank_hash
+##### Verification Node
+* Start verification node
 
-  # build a transaction like airdrop
-  solana config set --url localhost
-  solana config get --url localhost
-  # Keypair Path: /Users/solana/wallet/keypair.json
-  solana-keygen pubkey /Users/solana/wallet/keypair.json
-  # got pubkey: 5b1H000000000000000000000000000000000000vMPE
-  solana airdrop 1.2 <replace with RECIPIENT_ACCOUNT_ADDRESS or my_pubkey> --url localhost 
-  ```
-  
+Replay and verify shred from PG.
 
-  _pgconfig_path.json_ file has same parameters as geyser plugin configuration, which means same PG settings and database name as execution node's.
+```shell
+./target/release/shred-replay -c ./solana-accountsdb-plugin-postgres/scripts/geyser.json -l replay-ledger -g genesis_path
+```
+
+The command means:
+```
+-c, --config <CONFIG>           Configuration file to use [default: config.json]
+-g, --genesis <GENESIS_PATH>    Use GENESIS_PATH as genesis path [default: ledger]
+-l, --ledger <DIR>              Use DIR as ledger location [default: ledger]
+```
+
+* Start verification node's RPC service
+
+```shell
+./target/release/solo_rpc -l replay-ledger
+```
+
+`-l` means the verified ledger of verification node.
 
 #### Core designs of Execution Layer
 
