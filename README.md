@@ -132,6 +132,10 @@ graph TD
 
 Replay and verify shred from PG.
 
+Prerequisites:
+1. Configuration file of geyser plugin.
+2. `genesis.bin` directory path, we need to obtain `genesis.bin` from execution node's ledger directory, and store it in verification node file system.
+
 ```shell
 ./target/release/shred-replay -c ./solana-accountsdb-plugin-postgres/scripts/geyser.json -l replay-ledger -g genesis_path
 ```
