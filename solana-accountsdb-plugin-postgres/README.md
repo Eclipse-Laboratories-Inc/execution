@@ -12,7 +12,7 @@ configuration file looks like the following:
 	"libpath": "/solana/target/release/libsolana_geyser_plugin_postgres.so",
 	"host": "postgres-server",
 	"user": "solana",
-	"port": 5433,
+	"port": 5432,
 	"threads": 20,
 	"batch_size": 20,
 	"panic_on_db_errors": true,
@@ -171,29 +171,31 @@ sudo systemctl start postgresql@14-main
 Create the database. For example, the following creates a database named 'solana':
 
 ```
-sudo -u postgres createdb solana -p 5433
+sudo -u postgres createdb solana -p 5432
 ```
 
 Create the database user. For example, the following creates a regular user named 'solana':
 
 ```
-sudo -u postgres createuser -p 5433 solana
+sudo -u postgres createuser -p 5432 solana -P
 ```
+Type the password for the username.
 
 Verify the database is working using psql. For example, assuming the node running
 PostgreSQL has the ip 10.138.0.9, the following command will land in a shell where
 SQL commands can be entered:
 
 ```
-psql -U solana -p 5433 -h 10.138.0.9 -w -d solana
+psql -U solana -p 5432 -h 10.138.0.9 -d solana
 ```
+Again, if a prompt for the password be there, type the password for the user.
 
 #### Create the Schema Objects
 
 Use the scripts/create_schema.sql
 
 ```
-psql -U solana -p 5433 -h 10.138.0.9 -w -d solana -f scripts/create_schema.sql
+psql -U solana -p 5432 -h 10.138.0.9 -d solana -f scripts/create_schema.sql
 ```
 
 After this, start the validator with the plugin by using the `--geyser-plugin-config`
@@ -205,7 +207,7 @@ To destroy the database objects, created by `create_schema.sql`, use
 drop_schema.sql. For example,
 
 ```
-psql -U solana -p 5433 -h 10.138.0.9 -w -d solana -f scripts/drop_schema.sql
+psql -U solana -p 5432 -h 10.138.0.9 -d solana -f scripts/drop_schema.sql
 ```
 
 ### Capture Historical Account Data
