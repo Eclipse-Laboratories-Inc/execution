@@ -48,7 +48,7 @@ graph TD
 
 #### Execution flow of Execution Layer
 
-##### Execution Node
+##### 1.1 Execution Node
 
 * The execution node produce blocks, we use [accountsdb-plugin-postgres](./solana-accountsdb-plugin-postgres) to save blocks into PostgreSQL database.
   
@@ -68,9 +68,9 @@ graph TD
     
     &emsp;&emsp;Suppose we got a database named `solana`, a username `solana` with password `1234`. 
     
-    &emsp;&emsp;Then we should create Schema Objects in our solana  database.Our current directory is still `solana-executor`, so here is the command:
+    &emsp;&emsp;Then we should create Schema Objects in our solana  database. Our current directory is still `solana-executor`, so here is the command:
     
-    ```shell
+    ```
     psql -U solana -p 5432 -h localhost -d solana -f solana-accountsdb-plugin-postgres/scripts/create_schema.sql
     ```
     
@@ -86,7 +86,7 @@ graph TD
   
   c. Configure plugin settings
     
-    The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
+    &emsp;The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
     
     ```json
     {
@@ -105,7 +105,7 @@ graph TD
     }
     ```
     
-    The configuration details are:
+    &emsp;The configuration details are:
     ```
     libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
     host -- PostgreSQL server ip address
@@ -117,28 +117,32 @@ graph TD
   
   d. Start execution node
     
-    For now, we use Test Validator as our execution node, we start it with plugin configure file we just set.
+    &emsp;For now, we use Test Validator as our execution node, we start it with plugin configure file we just set.
     
     ```shell
     ./target/release/solana-test-validator --geyser-plugin-config ./solana-accountsdb-plugin-postgres/scripts/geyser.json
     ```
     
-    Now our test validator start producing blocks, and all these data saved in PostgreSQL.
+    &emsp;Now our test validator start producing blocks, and all these data saved in PostgreSQL.
 
-##### Verification Node
+##### 1.2 Verification Node
+
 * Start verification node
 
-Replay and verify shred from PG.
+&emsp;&emsp;Prerequisites:
 
-Prerequisites:
-1. Configuration file of geyser plugin.
-2. `genesis.bin` directory path, we need to obtain `genesis.bin` from execution node's ledger directory, and store it in verification node file system.
+```
+* Configuration file of geyser plugin.
+* 'genesis.bin' directory path, we need to obtain 'genesis.bin' from execution node's ledger directory, and store it in verification node file system.
+```
+
+&emsp;&emsp;Replay and verify shred from PG.
 
 ```shell
 ./target/release/shred-replay -c ./solana-accountsdb-plugin-postgres/scripts/geyser.json -l replay-ledger -g genesis_path
 ```
 
-The command means:
+&emsp;&emsp;The command means:
 ```
 -c, --config <CONFIG>           Configuration file to use [default: config.json]
 -g, --genesis <GENESIS_PATH>    Use GENESIS_PATH as genesis path [default: ledger]
@@ -151,7 +155,14 @@ The command means:
 ./target/release/solo_rpc -l replay-ledger
 ```
 
-`-l` means the verified ledger of verification node.
+&emsp;&emsp;`-l` means the verified ledger of verification node.
+
+### 2. Settlement Layer
+
+    TBD
+
+
+## Designs of under the hood
 
 #### Core designs of Execution Layer
 
@@ -162,6 +173,3 @@ The command means:
   * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
   *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
   
-### 2. Settlement Layer
-
-    TBD
