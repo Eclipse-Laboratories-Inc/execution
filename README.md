@@ -54,7 +54,7 @@ graph TD
   
   Instructions:
   
-  * Build code with submdoule
+  a. Build code with submdoule
     
     ```
     git clone https://github.com/Eclipse-Laboratories-Inc/settlement.git
@@ -62,31 +62,29 @@ graph TD
     cargo build --release
     ```
   
-  * Setup database
+  b. Setup database
     
-    For detailed documents of how to setup database, see [here](./solana-accountsdb-plugin-postgres#database-setup) .
+    &emsp;&emsp;For detailed documents of how to setup database, see [here](./solana-accountsdb-plugin-postgres#database-setup) .
     
-    Suppose we got a database named `solana`, a username `solana` with password `1234`. 
+    &emsp;&emsp;Suppose we got a database named `solana`, a username `solana` with password `1234`. 
     
-    Then we should create Schema Objects in our solana  database.Our current directory is still `solana-executor`, so here is the command:
+    &emsp;&emsp;Then we should create Schema Objects in our solana  database.Our current directory is still `solana-executor`, so here is the command:
     
     ```shell
     psql -U solana -p 5432 -h localhost -d solana -f solana-accountsdb-plugin-postgres/scripts/create_schema.sql
     ```
     
-    Let's explain the parameters in above command:
+    &emsp;&emsp;Let's explain the parameters in above command:
     
-    * -U -- username
-    
-    * -p -- port of PostgreSQL server
-    
-    * -h -- ip address pf PostgreSQL server
-    
-    * -d -- database name
-    
-    * -f -- the path of SQL script file we want to execute
+    ```
+    -U -- username
+    -p -- port of PostgreSQL server
+    -h -- ip address pf PostgreSQL server
+    -d -- database name
+    -f -- the path of SQL script file we want to execute
+    ```
   
-  * Configure plugin settings
+  c. Configure plugin settings
     
     The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
     
@@ -117,7 +115,7 @@ graph TD
     port -- Port of PostgreSQL server, in our case, 5432.
     ```
   
-  * Start execution node
+  d. Start execution node
     
     For now, we use Test Validator as our execution node, we start it with plugin configure file we just set.
     
