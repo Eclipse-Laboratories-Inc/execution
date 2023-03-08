@@ -1,8 +1,8 @@
 {
-    "libpath": "/Users/cairo/solana-dev/settlement/target/debug/libsolana_geyser_plugin_postgres.dylib",
+    "libpath": "./target/debug/libsolana_geyser_plugin_postgres.dylib",
     "host": "127.0.0.1",
     "user": "solana",
-    "password": "jw8s0F4",
+    "password": "1234",
     "dbname": "solana",
     "port": 5432,
     "threads": 20,
