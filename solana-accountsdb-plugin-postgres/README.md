@@ -9,17 +9,24 @@ configuration file looks like the following:
 
 ```
 {
-	"libpath": "/solana/target/release/libsolana_geyser_plugin_postgres.so",
-	"host": "postgres-server",
-	"user": "solana",
-	"port": 5432,
-	"threads": 20,
-	"batch_size": 20,
-	"panic_on_db_errors": true,
-	"accounts_selector" : {
-		"accounts" : ["*"]
-	}
+    "libpath": "./target/debug/libsolana_geyser_plugin_postgres.dylib",
+    "host": "127.0.0.1",
+    "user": "solana",
+    "password": "1234",
+    "dbname": "solana",
+    "port": 5432,
+    "threads": 20,
+    "batch_size": 20,
+    "panic_on_db_errors": true,
+    "accounts_selector" : {
+        "accounts" : ["*"]
+    },
+    "transaction_selector" : {
+        "mentions" : ["*"]
+    },
+    "entry_selector" : true
 }
+
 ```
 
 The `host`, `user`, and `port` control the PostgreSQL configuration
