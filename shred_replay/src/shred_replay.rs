@@ -261,7 +261,15 @@ impl Replayer {
 
             // Every VERIFY_INTERVAL_SLOTS slot we do a create-snapshot and verify.
             if cur_slot == verified + Self::VERIFY_INTERVAL_SLOTS {
-                // create snapshot first
+                // verify first
+                let v_out = run_ledger_tool(&["-l", &ledger_path, "verify"]);
+                if !v_out.status.success() {
+                    println!("verify replay ledger failed at slot: {}", cur_slot);
+                    println!("{:?}", v_out);
+                    break;
+                }
+
+                // then create snapshot
                 let cs_out = run_ledger_tool(&[
                     "-l",
                     &ledger_path,
@@ -272,14 +280,6 @@ impl Replayer {
                 if !cs_out.status.success() {
                     println!("create snapshot failed for slot: {}", cur_slot);
                     println!("{:?}", cs_out);
-                    break;
-                }
-
-                // then verify
-                let v_out = run_ledger_tool(&["-l", &ledger_path, "verify"]);
-                if !v_out.status.success() {
-                    println!("verify replay ledger failed at slot: {}", cur_slot);
-                    println!("{:?}", v_out);
                     break;
                 }
 
