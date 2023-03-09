@@ -66,6 +66,7 @@ pub struct Replayer {
 
 impl Replayer {
     const VERIFY_INTERVAL_SLOTS: i64 = 50;
+    const CREATE_SNAPSHOT_INTERVAL_SLOTS: i64 = 40;
 
     pub fn new() -> Self {
         Self {
@@ -269,19 +270,22 @@ impl Replayer {
                     break;
                 }
 
+                println!("verify replay ledger succed at slot: {}", cur_slot);
                 // then create snapshot
+                let cs_slot = cur_slot - (Self::VERIFY_INTERVAL_SLOTS - Self::CREATE_SNAPSHOT_INTERVAL_SLOTS);
                 let cs_out = run_ledger_tool(&[
                     "-l",
                     &ledger_path,
                     "create-snapshot",
-                    &cur_slot.to_string(),
+                    &cs_slot.to_string(),
                     &ledger_path,
                 ]);
                 if !cs_out.status.success() {
-                    println!("create snapshot failed for slot: {}", cur_slot);
+                    println!("create snapshot failed for slot: {}", cs_slot);
                     println!("{:?}", cs_out);
                     break;
                 }
+                println!("create snapshot failed for slot: {}", cs_slot);
 
                 // all good? save slot in record db
                 let client = self.client.as_mut().unwrap();
