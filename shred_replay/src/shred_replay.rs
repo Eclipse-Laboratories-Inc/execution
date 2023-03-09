@@ -240,8 +240,8 @@ impl Replayer {
         let entry_index = 0_i64;
         loop {
             let mut flag = true;
-            let num_shreds = self.query_newer_slot(cur_slot as u64);
-            if num_shreds == 0 {
+            let more_slots = self.query_newer_slot(cur_slot as u64);
+            if more_slots == 0 {
                 println!(
                     "[{:?}]No more new shred available at slot {} ",
                     chrono::offset::Utc::now(),
