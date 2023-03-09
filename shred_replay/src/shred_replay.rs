@@ -137,8 +137,6 @@ impl Replayer {
         let client = self.client.as_mut().unwrap();
         let stmt = client.prepare(stmt).unwrap();
 
-        // let mut cur_slot = 1;
-
         let result = client.query(&stmt, &[&(slot as i64)]);
         if result.is_err() {
             println!("query error for slot: {}", slot);
@@ -148,7 +146,7 @@ impl Replayer {
             let s: i64 = row.get(0);
             let ei: i64 = row.get(1);
             let full: bool = row.get(3);
-            println!("slot: {}, entry_index: {}, is_full_slot: {}", s, ei, full);
+            println!("[queried db] slot: {}, entry_index: {}, is_full_slot: {}", s, ei, full);
             let payload: Vec<u8> = row.get(2);
             let result = Shred::new_from_serialized_shred(payload);
             if result.is_err() {
@@ -243,7 +241,7 @@ impl Replayer {
             let more_slots = self.query_newer_slot(cur_slot as u64);
             if more_slots == 0 {
                 println!(
-                    "[{:?}]No more new shred available at slot {} ",
+                    "[{:?}]No more new shred available beyond slot {} ",
                     chrono::offset::Utc::now(),
                     cur_slot
                 );
@@ -257,7 +255,7 @@ impl Replayer {
             if shreds.is_empty() {
                 // no more new shred available
                 println!(
-                    "[{:?}]No more new shred available at slot {} ",
+                    "[{:?}]No more shred available at slot {} ",
                     chrono::offset::Utc::now(),
                     cur_slot
                 );
@@ -289,7 +287,7 @@ impl Replayer {
                 .as_ref()
                 .unwrap()
                 .get_slot_entries_with_shred_info(cur_slot as u64, 0, false)
-                .map_err(|err| format!("Failed to load entries for slot {}: {:?}", slot, err))
+                .map_err(|err| format!("Failed to load entries for slot {}: {:?}", cur_slot, err))
                 .unwrap();
             println!(
                 "insert shred succeed at slot: {}, num_shreds: {}, num_entries: {}, is_full: {}",
