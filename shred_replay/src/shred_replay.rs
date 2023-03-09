@@ -133,7 +133,7 @@ impl Replayer {
     fn load_shred_from_pg(&mut self, slot: u64) -> Vec<Shred> {
         let mut shreds: Vec<Shred> = Vec::new();
         let stmt =
-            "SELECT slot, entry_index, entry FROM entry where slot = $1 ORDER BY entry_index ASC";
+            "SELECT slot, entry_index, entry, is_full_slot FROM entry where slot = $1 ORDER BY entry_index ASC";
         let client = self.client.as_mut().unwrap();
         let stmt = client.prepare(stmt).unwrap();
 
@@ -147,7 +147,8 @@ impl Replayer {
         for row in result.unwrap() {
             let s: i64 = row.get(0);
             let ei: i64 = row.get(1);
-            println!("slot: {}, entry_index: {}", s, ei);
+            let full: bool = row.get(3);
+            println!("slot: {}, entry_index: {}, is_full_slot: {}", s, ei, full);
             let payload: Vec<u8> = row.get(2);
             let result = Shred::new_from_serialized_shred(payload);
             if result.is_err() {
@@ -176,6 +177,20 @@ impl Replayer {
         let slot: i64 = row.get(0);
 
         Some(slot as u64)
+    }
+
+    pub fn query_newer_slot(&mut self, slot: u64) -> u64 {
+        let stmt = "SELECT COUNT(*) FROM entry WHERE slot > $1;";
+        let client = self.client.as_mut().unwrap();
+        let stmt = client.prepare(stmt).unwrap();
+        let result = client.query(&stmt, &[&(slot as i64)]);
+        if result.is_err() {
+            println!("query error for slot: {}", slot);
+        }
+
+        let row = &result.unwrap()[0];
+        let num: i64 = row.get(0);
+        num as u64
     }
 
     pub fn setup_blockstore(&mut self) -> Result<(), ReplayerError> {
@@ -225,7 +240,20 @@ impl Replayer {
         let entry_index = 0_i64;
         loop {
             let mut flag = true;
+            let num_shreds = self.query_newer_slot(cur_slot as u64);
+            if num_shreds == 0 {
+                println!(
+                    "[{:?}]No more new shred available at slot {} ",
+                    chrono::offset::Utc::now(),
+                    cur_slot
+                );
+
+                std::thread::sleep(std::time::Duration::from_secs(10));
+                continue;
+            }
+
             let shreds = self.load_shred_from_pg(cur_slot as u64);
+            // This is hardly happen.
             if shreds.is_empty() {
                 // no more new shred available
                 println!(
@@ -256,10 +284,20 @@ impl Replayer {
                 }
             });
 
-            let (entries, num_shreds, is_full) = self.blockstore.as_ref().unwrap()
+            let (entries, num_shreds, is_full) = self
+                .blockstore
+                .as_ref()
+                .unwrap()
                 .get_slot_entries_with_shred_info(cur_slot as u64, 0, false)
-                .map_err(|err| format!("Failed to load entries for slot {}: {:?}", slot, err)).unwrap();
-            println!("insert shred succeed at slot: {}, num_shreds: {}, num_entries: {}, is_full: {}", cur_slot, num_shreds, entries.len(), is_full);
+                .map_err(|err| format!("Failed to load entries for slot {}: {:?}", slot, err))
+                .unwrap();
+            println!(
+                "insert shred succeed at slot: {}, num_shreds: {}, num_entries: {}, is_full: {}",
+                cur_slot,
+                num_shreds,
+                entries.len(),
+                is_full
+            );
 
             if !flag {
                 break;
@@ -268,7 +306,13 @@ impl Replayer {
             // Every VERIFY_INTERVAL_SLOTS slot we do a create-snapshot and verify.
             if cur_slot == verified + Self::VERIFY_INTERVAL_SLOTS {
                 // verify first
-                let v_out = run_ledger_tool(&["-l", &ledger_path, "verify", "--halt-at-slot", &cur_slot.to_string(),]);
+                let v_out = run_ledger_tool(&[
+                    "-l",
+                    &ledger_path,
+                    "verify",
+                    "--halt-at-slot",
+                    &cur_slot.to_string(),
+                ]);
                 if !v_out.status.success() {
                     println!("verify replay ledger failed at slot: {}", cur_slot);
                     println!("{:?}", v_out);
@@ -277,7 +321,8 @@ impl Replayer {
 
                 println!("verify replay ledger succed at slot: {}", cur_slot);
                 // then create snapshot
-                let cs_slot = cur_slot - (Self::VERIFY_INTERVAL_SLOTS - Self::CREATE_SNAPSHOT_INTERVAL_SLOTS);
+                let cs_slot =
+                    cur_slot - (Self::VERIFY_INTERVAL_SLOTS - Self::CREATE_SNAPSHOT_INTERVAL_SLOTS);
                 let cs_out = run_ledger_tool(&[
                     "-l",
                     &ledger_path,
