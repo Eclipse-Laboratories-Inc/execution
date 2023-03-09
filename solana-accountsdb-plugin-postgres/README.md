@@ -222,7 +222,7 @@ To destroy the database objects, created by `create_schema.sql`, use
 drop_schema.sql. For example,
 
 ```
-psql -U solana -p 5432 -h 10.138.0.9 -d solana -f scripts/drop_schema.sql
+psql -U solana -p 5432 -h localhost -d solana -f scripts/drop_schema.sql
 ```
 
 ### Capture Historical Account Data

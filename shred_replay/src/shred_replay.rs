@@ -256,6 +256,11 @@ impl Replayer {
                 }
             });
 
+            let (entries, num_shreds, is_full) = self.blockstore.as_ref().unwrap()
+                .get_slot_entries_with_shred_info(cur_slot as u64, 0, false)
+                .map_err(|err| format!("Failed to load entries for slot {}: {:?}", slot, err)).unwrap();
+            println!("insert shred succeed at slot: {}, num_shreds: {}, num_entries: {}, is_full: {}", cur_slot, num_shreds, entries.len(), is_full);
+
             if !flag {
                 break;
             }

@@ -2551,18 +2551,28 @@ impl ReplayStage {
 
                 // notify entries once current bank is completed
                 if let Some(ref entry_notifier) = entry_notifier {
-                    let load_result = blockstore.get_slot_entries_with_shred_info(bank.slot(), 0, false).unwrap();
-                    // info!("load_result entries: {}, slot: {}", load_result.0.len(), bank.slot());
+                    let cur_slot = bank.slot();
+                    if cur_slot > 1 {
+                        let pre_slot = cur_slot - 1;
+                        let load_result = blockstore.get_slot_entries_with_shred_info(pre_slot, 0, false).unwrap();
 
-                    let untrusted_entry = UntrustedEntry {
-                        entries: load_result.0.clone(),
-                        slot: bank.slot(),
-                        parent_slot: bank.parent_slot(),
-                        is_full_slot: load_result.2
-                    };
+                        let untrusted_entry = UntrustedEntry {
+                            entries: load_result.0.clone(),
+                            slot: pre_slot,
+                            parent_slot: pre_slot - 1,
+                            is_full_slot: load_result.2
+                        };
 
-                    let entry_notifier = entry_notifier.read().unwrap();
-                    entry_notifier.notify_entry(&untrusted_entry);
+                        let entry_notifier = entry_notifier.read().unwrap();
+                        entry_notifier.notify_entry(&untrusted_entry);
+                    }
+                    
+
+                    // if bank.slot() > 1 {
+                    //     let last_load_result = blockstore.get_slot_entries_with_shred_info(bank.slot() - 1, 0, false).unwrap(); 
+
+                    //     info!("last slot: {}, is_full_slot: {}, current slot: {}, is_full_slot: {}", bank.slot() - 1, last_load_result.2, bank.slot(), load_result.2);
+                    // }
                 }
 
                 bank_complete_time.stop();
