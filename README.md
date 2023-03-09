@@ -90,18 +90,22 @@ graph TD
     
     ```json
     {
-        "libpath": "../../target/release/libsolana_geyser_plugin_postgres.dylib",
-        "host": "localhost",
-        "user": "solana",
-        "password":"1234",
-        "dbname":"solana",
-        "port": 5432,
-        "threads": 20,
-        "batch_size": 20,
-        "panic_on_db_errors": true,
-        "accounts_selector" : {
-            "accounts" : ["*"]
-        }
+      "libpath": "../../target/release/libsolana_geyser_plugin_postgres.dylib",
+      "host": "127.0.0.1",
+      "user": "solana",
+      "password": "1234",
+      "dbname": "solana",
+      "port": 5432,
+      "threads": 20,
+      "batch_size": 20,
+      "panic_on_db_errors": true,
+      "accounts_selector" : {
+          "accounts" : ["*"]
+      },
+      "transaction_selector" : {
+          "mentions" : ["*"]
+      },
+      "entry_selector" : true
     }
     ```
     
@@ -173,3 +177,75 @@ graph TD
   * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
   *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
   
+
+
+# 编译
+
+不要使用 brew 安装 rust, 如果已经使用 brew 安装了 rust，需要先卸载 rust
+```
+$ brew uninstall rust 
+```
+
+使用下述命令安装 rust
+
+``` 
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ source $HOME/.cargo/env
+```
+
+安装完成后的路径
+
+``` 
+$ which rustup
+$HOME/.cargo/bin/rustup
+
+$ which rustc
+$HOME/.cargo/bin/rustc
+```
+
+使用命令查看当前工具链 以及支持的所有所有工具链
+
+```
+
+$ rustup show
+$ rustup target list
+ 
+```
+
+常用的如下
+
+```
+使用 apple m1 m2 芯片 的 macos
+aarch64-apple-darwin
+
+使用 intel 芯片 的 macos
+x86_64-apple-darwin 
+```
+
+添加相应工具链
+``` 
+此处仅为举例。需要根据实际情况确定编译目标。
+$ rustup target add aarch64-apple-darwin
+```
+
+
+设置编译平台
+
+```
+$ vim $HOME/.cargo/config
+
+此处仅为举例。需要根据实际情况确定编译目标。
+
+添加
+
+[build]
+target = "aarch64-apple-darwin"
+```
+
+也可以在编译时指定
+
+``` 
+此处仅为举例。需要根据实际情况确定编译目标。
+
+$ cargo build --release --target aarch64-apple-darwin
+```
