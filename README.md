@@ -90,18 +90,22 @@ graph TD
     
     ```json
     {
-        "libpath": "../../target/release/libsolana_geyser_plugin_postgres.dylib",
-        "host": "localhost",
-        "user": "solana",
-        "password":"1234",
-        "dbname":"solana",
-        "port": 5432,
-        "threads": 20,
-        "batch_size": 20,
-        "panic_on_db_errors": true,
-        "accounts_selector" : {
-            "accounts" : ["*"]
-        }
+      "libpath": "../../target/release/libsolana_geyser_plugin_postgres.dylib",
+      "host": "127.0.0.1",
+      "user": "solana",
+      "password": "1234",
+      "dbname": "solana",
+      "port": 5432,
+      "threads": 20,
+      "batch_size": 20,
+      "panic_on_db_errors": true,
+      "accounts_selector" : {
+          "accounts" : ["*"]
+      },
+      "transaction_selector" : {
+          "mentions" : ["*"]
+      },
+      "entry_selector" : true
     }
     ```
     
