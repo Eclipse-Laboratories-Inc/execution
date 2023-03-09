@@ -203,13 +203,13 @@ $ which rustc
 $HOME/.cargo/bin/rustc
 ```
 
-使用命令查看当前工具链 以及支持的所有所有工具链
+使用命令查看当前工具链 以及支持的所有工具链
+
 
 ```
-
 $ rustup show
 $ rustup target list
- 
+$ rustup toolchain list
 ```
 
 常用的如下
@@ -222,12 +222,21 @@ aarch64-apple-darwin
 x86_64-apple-darwin 
 ```
 
-添加相应工具链
+添加相应工具链并删除不用的工具链
 ``` 
-此处仅为举例。需要根据实际情况确定编译目标。
+此处仅为举例。需要根据实际情况确定编译工具链和编译目标。
 $ rustup target add aarch64-apple-darwin
+$ rustup toolchain install stable-aarch64-apple-darwin
+$ rustup target remove x86_64-apple-darwin
+$ rustup toolchain uninstall stable-x86_64-apple-darwin 1.67.1-x86_64-apple-darwin
 ```
 
+设置编译工具链
+
+```
+此处仅为举例。需要根据实际情况确定编译工具链。
+$ rustup default stable-aarch64-apple-darwin 
+```
 
 设置编译平台
 
