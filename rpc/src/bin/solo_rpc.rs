@@ -1,4 +1,3 @@
-use std::process::Command;
 use {
     clap::{value_t_or_exit, App, Arg, SubCommand},
     solana_client::rpc_config::RpcContextConfig,
@@ -29,6 +28,7 @@ use {
         bank_forks::BankForks,
         commitment::BlockCommitmentCache,
         hardened_unpack::{open_genesis_config, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE},
+        snapshot_archive_info::SnapshotArchiveInfoGetter,
         snapshot_config::SnapshotConfig,
         snapshot_utils,
     },
@@ -43,6 +43,7 @@ use {
     solana_streamer::socket::SocketAddrSpace,
     std::{
         collections::HashSet,
+        fs,
         net::{IpAddr, Ipv4Addr, SocketAddr},
         path::{Path, PathBuf},
         sync::{
@@ -69,23 +70,25 @@ fn main() {
                 .help("Use DIR as ledger location"),
         )
         .get_matches();
-    
-    loop{
+
+    let ledger_path = value_t_or_exit!(matches, "ledger_path", PathBuf);
+    run_rpc_with_elapse(&ledger_path, 5);
+}
+
+fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
+    loop {
         let start = Instant::now();
-        // let ledger_path = Path::new("test-ledger");
-        let ledger_path = value_t_or_exit!(matches, "ledger_path", PathBuf);
+        let full_snapshot_archives_dir = ledger_path.join("srpc").to_path_buf();
+        fs::remove_dir_all(full_snapshot_archives_dir.as_path());
+        fs::create_dir(full_snapshot_archives_dir.as_path());
 
-        Command::new("rm")
-        .arg("-rf")
-        .arg("/Users/songgeng/Project/execution/replay-ledger/srpc/")
-        .spawn()
-        .expect("rm command failed to start");
-
-        Command::new("cp")
-        .arg("/Users/songgeng/Project/execution/replay-ledger/snapshot-*")
-        .arg("/Users/songgeng/Project/execution/replay-ledger/srpc/")
-        .spawn()
-        .expect("cp command failed to start");
+        let full_snapshot_archive_info =
+            snapshot_utils::get_highest_full_snapshot_archive_info(&ledger_path);
+        if let Some(full_snapshot_archive_info) = full_snapshot_archive_info {
+            let file_name = full_snapshot_archive_info.path().file_name().unwrap();
+            let dst_path = full_snapshot_archives_dir.as_path().join(file_name);
+            fs::copy(full_snapshot_archive_info.path(), dst_path);
+        }
 
         let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
         let blockstore = Arc::new(
@@ -102,14 +105,15 @@ fn main() {
         let account_paths = vec![non_primary_accounts_path];
         let process_options = ProcessOptions::default();
         let snapshot_config = SnapshotConfig {
-            full_snapshot_archive_interval_slots: snapshot_utils::DEFAULT_FULL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
-            incremental_snapshot_archive_interval_slots: snapshot_utils::DEFAULT_INCREMENTAL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
+            full_snapshot_archive_interval_slots:
+                snapshot_utils::DEFAULT_FULL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
+            incremental_snapshot_archive_interval_slots:
+                snapshot_utils::DEFAULT_INCREMENTAL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
             bank_snapshots_dir: ledger_path.join("snapshot"),
-            full_snapshot_archives_dir: ledger_path.join("srpc").to_path_buf(),
-            incremental_snapshot_archives_dir: ledger_path.join("srpc").to_path_buf(),
+            full_snapshot_archives_dir: full_snapshot_archives_dir.clone(),
+            incremental_snapshot_archives_dir: full_snapshot_archives_dir,
             ..SnapshotConfig::default()
         };
-
 
         let (bank_forks, leader_schedule_cache, ..) = bank_forks_utils::load_bank_forks(
             &genesis_config,
@@ -139,7 +143,7 @@ fn main() {
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
         ));
-        let ip_addr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         let rpc_addr = SocketAddr::new(ip_addr, 9988);
 
         let mut block_commitment_cache = BlockCommitmentCache::default();
@@ -184,16 +188,14 @@ fn main() {
             Arc::new(AtomicU64::default()),
         );
 
-        let duration = start.elapsed();
-        let last_slot = bank_forks_guard.working_bank().slot();
-        let last_root = bank_forks_guard.root();
         println!(
             "rpc: {}, slot: {}, root: {}, it costs {:?} to start.",
-            rpc_addr, last_slot, last_root, duration
+            rpc_addr,
+            bank_forks_guard.working_bank().slot(),
+            bank_forks_guard.root(),
+            start.elapsed()
         );
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(secs));
         rpc_service.exit();
-    
     }
-    
 }
