@@ -30,6 +30,7 @@ pub struct GeyserPluginPostgres {
     transaction_selector: Option<TransactionSelector>,
     entry_selector: Option<EntrySelector>,
     batch_starting_slot: Option<u64>,
+    entry_starting_slot: Option<u64>,
 }
 
 impl std::fmt::Debug for GeyserPluginPostgres {
@@ -205,10 +206,11 @@ impl GeyserPlugin for GeyserPluginPostgres {
                 }
             })?;
 
-        let (client, batch_optimize_by_skiping_older_slots) =
+        let (client, batch_optimize_by_skiping_older_slots, entry_starting_slot) =
             PostgresClientBuilder::build_pararallel_postgres_client(&config)?;
         self.client = Some(client);
         self.batch_starting_slot = batch_optimize_by_skiping_older_slots;
+        self.entry_starting_slot = entry_starting_slot;
 
         let sequence_client = PostgresClientBuilder::build_sequence_postgres_client(&config)?;
         self.sequence_client = Some(sequence_client);
@@ -518,6 +520,10 @@ impl GeyserPlugin for GeyserPluginPostgres {
         self.entry_selector
             .as_ref()
             .map_or_else(|| false, |selector| selector.is_enabled())
+    }
+
+    fn last_insert_entry(&self) -> u64 {
+        self.entry_starting_slot.unwrap()
     }
 }
 

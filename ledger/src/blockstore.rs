@@ -572,6 +572,7 @@ impl Blockstore {
             }
         }
 
+        println!("Failed slot: {}", last_valid_slot + 1);
         false
     }
 

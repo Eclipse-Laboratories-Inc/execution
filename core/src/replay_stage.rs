@@ -95,6 +95,8 @@ const MAX_VOTE_REFRESH_INTERVAL_MILLIS: usize = 5000;
 // to be able to replay all active forks at the same time in most cases.
 const MAX_CONCURRENT_FORKS_TO_REPLAY: usize = 4;
 
+static mut LAST_NOTIFIED_FULL_SLOT: u64 = 0;
+
 lazy_static! {
     static ref PAR_THREAD_POOL: ThreadPool = rayon::ThreadPoolBuilder::new()
         .num_threads(MAX_CONCURRENT_FORKS_TO_REPLAY)
@@ -2551,28 +2553,58 @@ impl ReplayStage {
 
                 // notify entries once current bank is completed
                 if let Some(ref entry_notifier) = entry_notifier {
-                    let cur_slot = bank.slot();
-                    if cur_slot > 1 {
-                        let pre_slot = cur_slot - 1;
-                        let load_result = blockstore.get_slot_entries_with_shred_info(pre_slot, 0, false).unwrap();
+                    // unsafe {
+                    //     let entry_notifier = entry_notifier.read().unwrap();
+                    //     if LAST_NOTIFIED_FULL_SLOT == 0 {
+                    //         LAST_NOTIFIED_FULL_SLOT = entry_notifier.last_insert_entry();
+                    //     }
+                    //     let target_slot = LAST_NOTIFIED_FULL_SLOT + 1;
+                    //     // let is_full = blockstore.is_full(target_slot);
+                    //     // let is_dead = blockstore.is_dead(target_slot);
+                    //     // let is_skipped = blockstore.is_skipped(target_slot);
+                    //     let load_result = blockstore.get_slot_entries_with_shred_info(target_slot, 0, false).unwrap();
+                    //     if load_result.2 {
+                    //         let untrusted_entry = UntrustedEntry {
+                    //             entries: load_result.0.clone(),
+                    //             slot: target_slot,
+                    //             parent_slot: target_slot - 1,
+                    //             is_full_slot: load_result.2
+                    //         };
 
-                        let untrusted_entry = UntrustedEntry {
-                            entries: load_result.0.clone(),
-                            slot: pre_slot,
-                            parent_slot: pre_slot - 1,
-                            is_full_slot: load_result.2
-                        };
-
-                        let entry_notifier = entry_notifier.read().unwrap();
-                        entry_notifier.notify_entry(&untrusted_entry);
-                    }
-                    
-
-                    // if bank.slot() > 1 {
-                    //     let last_load_result = blockstore.get_slot_entries_with_shred_info(bank.slot() - 1, 0, false).unwrap(); 
-
-                    //     info!("last slot: {}, is_full_slot: {}, current slot: {}, is_full_slot: {}", bank.slot() - 1, last_load_result.2, bank.slot(), load_result.2);
+                    //         entry_notifier.notify_entry(&untrusted_entry);
+                    //         LAST_NOTIFIED_FULL_SLOT += 1;
+                    //     } else {
+                    //         // target_slot is not full, let's try next one to see if it is valid
+                    //         let next_slot = target_slot + 1;
+                    //         if let Ok(Some(meta)) = blockstore.meta(next_slot) {
+                    //             if let Some(parent_slot) = meta.parent_slot {
+                    //                 if parent_slot == LAST_NOTIFIED_FULL_SLOT && blockstore.is_full(next_slot) {
+                    //                     LAST_NOTIFIED_FULL_SLOT += 1;
+                    //                 }
+                    //             }
+                    //         }
+                    //     }
                     // }
+                    unsafe {
+                        let entry_notifier = entry_notifier.read().unwrap();
+                        if LAST_NOTIFIED_FULL_SLOT == 0 {
+                            LAST_NOTIFIED_FULL_SLOT = entry_notifier.last_insert_entry();
+                        }
+
+                        let target_slot = LAST_NOTIFIED_FULL_SLOT + 1;
+                        if let Ok(Some(slot_meta)) = blockstore.meta(target_slot) {
+                            let load_result = blockstore.get_slot_entries_with_shred_info(target_slot, 0, false).unwrap();
+                            let untrusted_entry = UntrustedEntry {
+                                entries: load_result.0.clone(),
+                                slot: target_slot,
+                                parent_slot: slot_meta.parent_slot.unwrap(),
+                                is_full_slot: load_result.2
+                            };
+
+                            entry_notifier.notify_entry(&untrusted_entry);
+                            LAST_NOTIFIED_FULL_SLOT += 1;
+                        } 
+                    }
                 }
 
                 bank_complete_time.stop();
