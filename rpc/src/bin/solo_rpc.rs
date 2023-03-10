@@ -76,21 +76,23 @@ fn main() {
 }
 
 fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
+    let full_snapshot_archives_dir = ledger_path.join("srpc").to_path_buf();
+    fs::remove_dir_all(full_snapshot_archives_dir.as_path());
+    fs::create_dir(full_snapshot_archives_dir.as_path());
+
+    let full_snapshot_archive_info =
+        snapshot_utils::get_highest_full_snapshot_archive_info(&ledger_path);
+    
+    let full_snapshot_archive_infos = snapshot_utils::get_full_snapshot_archives(&ledger_path);
+    full_snapshot_archive_infos.iter().for_each(|full_snapshot_archive_info| {
+        let file_name = full_snapshot_archive_info.path().file_name().unwrap();
+        let dst_path = full_snapshot_archives_dir.as_path().join(file_name);
+        fs::copy(full_snapshot_archive_info.path(), dst_path);
+    });
+    
     loop {
         let start = Instant::now();
-        let full_snapshot_archives_dir = ledger_path.join("srpc").to_path_buf();
-        fs::remove_dir_all(full_snapshot_archives_dir.as_path());
-        fs::create_dir(full_snapshot_archives_dir.as_path());
-
-        let full_snapshot_archive_info =
-            snapshot_utils::get_highest_full_snapshot_archive_info(&ledger_path);
         
-        let full_snapshot_archive_infos = snapshot_utils::get_full_snapshot_archives(&ledger_path);
-        full_snapshot_archive_infos.iter().for_each(|full_snapshot_archive_info| {
-            let file_name = full_snapshot_archive_info.path().file_name().unwrap();
-            let dst_path = full_snapshot_archives_dir.as_path().join(file_name);
-            fs::copy(full_snapshot_archive_info.path(), dst_path);
-        });
 
         let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
         let blockstore = Arc::new(
@@ -113,7 +115,7 @@ fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
                 snapshot_utils::DEFAULT_INCREMENTAL_SNAPSHOT_ARCHIVE_INTERVAL_SLOTS,
             bank_snapshots_dir: ledger_path.join("snapshot"),
             full_snapshot_archives_dir: full_snapshot_archives_dir.clone(),
-            incremental_snapshot_archives_dir: full_snapshot_archives_dir,
+            incremental_snapshot_archives_dir: full_snapshot_archives_dir.clone(),
             ..SnapshotConfig::default()
         };
 
@@ -145,7 +147,7 @@ fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
         ));
-        let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+        let ip_addr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let rpc_addr = SocketAddr::new(ip_addr, 9988);
 
         let mut block_commitment_cache = BlockCommitmentCache::default();
@@ -197,6 +199,21 @@ fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
             bank_forks_guard.root(),
             start.elapsed()
         );
+
+        let full_snapshot_archives_dir = ledger_path.join("srpc").to_path_buf();
+        fs::remove_dir_all(full_snapshot_archives_dir.as_path());
+        fs::create_dir(full_snapshot_archives_dir.as_path());
+
+        let full_snapshot_archive_info =
+            snapshot_utils::get_highest_full_snapshot_archive_info(&ledger_path);
+        
+        let full_snapshot_archive_infos = snapshot_utils::get_full_snapshot_archives(&ledger_path);
+        full_snapshot_archive_infos.iter().for_each(|full_snapshot_archive_info| {
+            let file_name = full_snapshot_archive_info.path().file_name().unwrap();
+            let dst_path = full_snapshot_archives_dir.as_path().join(file_name);
+            fs::copy(full_snapshot_archive_info.path(), dst_path);
+        });
+
         std::thread::sleep(std::time::Duration::from_secs(secs));
         rpc_service.exit();
     }
