@@ -84,11 +84,13 @@ fn run_rpc_with_elapse(ledger_path: &Path, secs: u64) {
 
         let full_snapshot_archive_info =
             snapshot_utils::get_highest_full_snapshot_archive_info(&ledger_path);
-        if let Some(full_snapshot_archive_info) = full_snapshot_archive_info {
+        
+        let full_snapshot_archive_infos = snapshot_utils::get_full_snapshot_archives(&ledger_path);
+        full_snapshot_archive_infos.iter().for_each(|full_snapshot_archive_info| {
             let file_name = full_snapshot_archive_info.path().file_name().unwrap();
             let dst_path = full_snapshot_archives_dir.as_path().join(file_name);
             fs::copy(full_snapshot_archive_info.path(), dst_path);
-        }
+        });
 
         let genesis_config = open_genesis_config(&ledger_path, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE);
         let blockstore = Arc::new(
