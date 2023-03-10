@@ -2592,17 +2592,21 @@ impl ReplayStage {
                         }
 
                         let target_slot = LAST_NOTIFIED_FULL_SLOT + 1;
+                        // target slot exists
                         if let Ok(Some(slot_meta)) = blockstore.meta(target_slot) {
-                            let load_result = blockstore.get_slot_entries_with_shred_info(target_slot, 0, false).unwrap();
-                            let untrusted_entry = UntrustedEntry {
-                                entries: load_result.0.clone(),
-                                slot: target_slot,
-                                parent_slot: slot_meta.parent_slot.unwrap(),
-                                is_full_slot: load_result.2
-                            };
+                            // next slot exists, meaning target slot is final.
+                            if let Ok(Some(_)) = blockstore.meta(target_slot + 1) {
+                                let load_result = blockstore.get_slot_entries_with_shred_info(target_slot, 0, false).unwrap();
+                                let untrusted_entry = UntrustedEntry {
+                                    entries: load_result.0.clone(),
+                                    slot: target_slot,
+                                    parent_slot: slot_meta.parent_slot.unwrap(),
+                                    is_full_slot: load_result.2
+                                };
 
-                            entry_notifier.notify_entry(&untrusted_entry);
-                            LAST_NOTIFIED_FULL_SLOT += 1;
+                                entry_notifier.notify_entry(&untrusted_entry);
+                                LAST_NOTIFIED_FULL_SLOT += 1;
+                            }
                         } 
                     }
                 }
