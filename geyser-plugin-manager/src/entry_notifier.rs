@@ -14,6 +14,11 @@ pub(crate) struct EntryNotifierImpl {
 impl EntryNotifier for EntryNotifierImpl {
     /// Notify the entry
     fn notify_entry(&self, entry: &UntrustedEntry) {
+        info!("notify_entry: entries: {}, slot: {}, parent_slot: {}, is_full_slot: {}", entry.entries.len(), entry.slot, entry.parent_slot, entry.is_full_slot);
+        if !entry.is_full_slot {
+            let a = 0;
+            println!("error");
+        }
         let mut plugin_manager = self.plugin_manager.write().unwrap();
         if plugin_manager.plugins.is_empty() {
             return;
@@ -35,6 +40,22 @@ impl EntryNotifier for EntryNotifierImpl {
                 }
             }
         }
+    }
+
+    fn last_insert_entry(&self) -> u64 {
+        let mut plugin_manager = self.plugin_manager.write().unwrap();
+        if plugin_manager.plugins.is_empty() {
+            return 0;
+        }
+
+        for plugin in plugin_manager.plugins.iter_mut() {
+            if !plugin.entry_notifications_enabled() {
+                continue;
+            }
+            return plugin.last_insert_entry();
+        }
+
+        0
     }
 }
 

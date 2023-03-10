@@ -559,8 +559,10 @@ impl Blockstore {
             Ok(Some(starting_slot_meta)) => starting_slot_meta.next_slots.into(),
             _ => return false,
         };
+        let mut last_valid_slot = 0;
         while let Some(slot) = next_slots.pop_front() {
             if let Ok(Some(slot_meta)) = self.meta(slot) {
+                last_valid_slot = slot;
                 if slot_meta.is_full() {
                     match slot.cmp(&ending_slot) {
                         cmp::Ordering::Less => next_slots.extend(slot_meta.next_slots),
@@ -570,6 +572,7 @@ impl Blockstore {
             }
         }
 
+        println!("Failed slot: {}", last_valid_slot + 1);
         false
     }
 

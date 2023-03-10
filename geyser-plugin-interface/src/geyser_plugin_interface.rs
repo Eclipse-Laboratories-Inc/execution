@@ -291,4 +291,6 @@ pub trait GeyserPlugin: Any + Send + Sync + std::fmt::Debug {
     }
 
     fn entry_notifications_enabled(&self) -> bool { false }
+
+    fn last_insert_entry(&self) -> u64 { 0 }
 }
