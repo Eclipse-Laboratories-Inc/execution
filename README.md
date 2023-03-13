@@ -1,6 +1,6 @@
-# Solana Layer2 node
+# SVM Rollup Node
 
-A Solana based Layer 2 node. 
+SVM rollup which replays transactions. This repo uses a local Postgres rather than an actual DA layer.
 
 ## Building
 
