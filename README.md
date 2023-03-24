@@ -4,7 +4,9 @@ SVM rollup node which replays transactions. This repo uses a local Postgres rath
 
 ## Building
 
-For how to build and test code, see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions.
+For how to build and test code, it is recommanded to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
+
+For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
 
 ### Design
 
@@ -177,84 +179,3 @@ graph TD
   * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
   *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
   
-
-
-# 编译
-
-不要使用 brew 安装 rust, 如果已经使用 brew 安装了 rust，需要先卸载 rust
-```
-$ brew uninstall rust 
-```
-
-使用下述命令安装 rust
-
-``` 
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-$ source $HOME/.cargo/env
-```
-
-安装完成后的路径
-
-``` 
-$ which rustup
-$HOME/.cargo/bin/rustup
-
-$ which rustc
-$HOME/.cargo/bin/rustc
-```
-
-使用命令查看当前工具链 以及支持的所有工具链
-
-
-```
-$ rustup show
-$ rustup target list
-$ rustup toolchain list
-```
-
-常用的如下
-
-```
-使用 apple m1 m2 芯片 的 macos
-aarch64-apple-darwin
-
-使用 intel 芯片 的 macos
-x86_64-apple-darwin 
-```
-
-添加相应工具链并删除不用的工具链
-``` 
-此处仅为举例。需要根据实际情况确定编译工具链和编译目标。
-$ rustup target add aarch64-apple-darwin
-$ rustup toolchain install stable-aarch64-apple-darwin
-$ rustup target remove x86_64-apple-darwin
-$ rustup toolchain uninstall stable-x86_64-apple-darwin 1.67.1-x86_64-apple-darwin
-```
-
-设置编译工具链
-
-```
-此处仅为举例。需要根据实际情况确定编译工具链。
-$ rustup default stable-aarch64-apple-darwin 
-```
-
-设置编译平台
-
-```
-$ vim $HOME/.cargo/config
-
-此处仅为举例。需要根据实际情况确定编译目标。
-
-添加
-
-[build]
-target = "aarch64-apple-darwin"
-```
-
-也可以在编译时指定
-
-``` 
-此处仅为举例。需要根据实际情况确定编译目标。
-
-$ cargo build --release --target aarch64-apple-darwin
-```
