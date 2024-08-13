@@ -116,7 +116,7 @@ graph TD
     libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
     host -- PostgreSQL server ip address
     user -- Username of database
-    password -- Paddword of database
+    password -- Password of database
     dbname -- Database name
     port -- Port of PostgreSQL server, in our case, 5432.
     ```
