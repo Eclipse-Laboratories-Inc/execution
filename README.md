@@ -6,7 +6,7 @@ SVM rollup node which replays transactions. This repo uses a local Postgres rath
 
 For how to build and test code, it is recommanded to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
 
-For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
+For Apple chip build, there's a [note](./apple_chip_build.md) that might help.
 
 ### Design
 
