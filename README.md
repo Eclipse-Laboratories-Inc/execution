@@ -4,13 +4,13 @@ SVM rollup node which replays transactions. This repo uses a local Postgres rath
 
 ## Building
 
-For how to build and test code, it is recommanded to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
+For how to build and test code, it is recommended to see [Solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
 
-For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
+For Apple chip build, there's a [note](./apple_chip_build.md) that might help.
 
 ### Design
 
-The architecture of design as below:
+The architecture design is as follows:
 
 ![Architecture](./architecture-diagram.svg)
 
@@ -81,14 +81,14 @@ graph TD
     ```
     -U -- username
     -p -- port of PostgreSQL server
-    -h -- ip address pf PostgreSQL server
+    -h -- IP address of PostgreSQL server
     -d -- database name
     -f -- the path of SQL script file we want to execute
     ```
   
   c. Configure plugin settings
     
-    &emsp;The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
+    &emsp;The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need to change some settings in it:
     
     ```json
     {
@@ -116,7 +116,7 @@ graph TD
     libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
     host -- PostgreSQL server ip address
     user -- Username of database
-    password -- Paddword of database
+    password -- Password of database
     dbname -- Database name
     port -- Port of PostgreSQL server, in our case, 5432.
     ```
@@ -129,7 +129,7 @@ graph TD
     ./target/release/solana-test-validator --geyser-plugin-config ./solana-accountsdb-plugin-postgres/scripts/geyser.json
     ```
     
-    &emsp;Now our test validator start producing blocks, and all these data saved in PostgreSQL.
+    &emsp;Now our test validator starts producing blocks, and all this data is saved in PostgreSQL.
 
 ##### 1.2 Verification Node
 
