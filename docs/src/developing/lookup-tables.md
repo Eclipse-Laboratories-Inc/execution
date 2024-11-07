@@ -22,7 +22,7 @@ To utilize an Address Lookup Table inside a transaction, developers must use v0 
 
 Creating a new lookup table with the `@solana/web3.js` library is similar to the older `legacy` transactions, but with some differences.
 
-Using the `@solana/web3.js` library, you can use the [`createLookupTable`](https://solana-labs.github.io/solana-web3.js/classes/AddressLookupTableProgram.html#createLookupTable) function to construct the instruction needed to create a new lookup table, as well as determine its address:
+Using the `@solana/web3.js` library, you can use the [`createLookupTable`](https://solana-labs.github.io/solana-web3.js/v1.x/classes/AddressLookupTableProgram.html#createLookupTable) function to construct the instruction needed to create a new lookup table, as well as determine its address:
 
 ```js
 const web3 = require("@solana/web3.js");
@@ -52,7 +52,7 @@ console.log("lookup table address:", lookupTableAddress.toBase58());
 
 ## Add addresses to a lookup table
 
-Adding addresses to a lookup table is known as "_extending_". Using the the `@solana/web3.js` library, you can create a new _extend_ instruction using the [`extendLookupTable`](https://solana-labs.github.io/solana-web3.js/classes/AddressLookupTableProgram.html#extendLookupTable) method:
+Adding addresses to a lookup table is known as "_extending_". Using the the `@solana/web3.js` library, you can create a new _extend_ instruction using the [`extendLookupTable`](https://solana-labs.github.io/solana-web3.js/v1.x/classes/AddressLookupTableProgram.html#extendLookupTable) method:
 
 ```js
 // add addresses to the `lookupTableAddress` table via an `extend` instruction
@@ -78,7 +78,7 @@ Once these address have been inserted into the table, and stored on chain, you w
 
 ## Fetch an Address Lookup Table
 
-Similar to requesting another account (or PDA) from the cluster, you can fetch a complete Address Lookup Table with the [`getAddressLookupTable`](https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getAddressLookupTable) method:
+Similar to requesting another account (or PDA) from the cluster, you can fetch a complete Address Lookup Table with the [`getAddressLookupTable`](https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getAddressLookupTable) method:
 
 ```js
 // define the `PublicKey` of the lookup table to fetch

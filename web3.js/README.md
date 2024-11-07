@@ -26,7 +26,7 @@ This is the Solana Javascript API built on the Solana [JSON RPC API](https://doc
 ## Documentation and examples
 
  - [The Solana Cookbook](https://solanacookbook.com/) has extensive task-based documentation using this library.
- - For more detail on individual functions, see the [latest API Documentation](https://solana-labs.github.io/solana-web3.js/)
+ - For more detail on individual functions, see the [latest API Documentation](https://solana-labs.github.io/solana-web3.js/v1.x/)
 
 ## Installation
 
