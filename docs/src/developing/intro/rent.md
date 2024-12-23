@@ -16,7 +16,7 @@ When an Account no longer has enough LAMPORTS to pay its rent, it will be remove
 
 The Solana rent rate is set on a network wide basis, primarily based on the set LAMPORTS _per_ byte _per_ year.
 
-Currently, the rent rate is a static amount and stored in the the [Rent sysvar](../runtime-facilities/sysvars.md#rent).
+Currently, the rent rate is a static amount and stored in the [Rent sysvar](../runtime-facilities/sysvars.md#rent).
 
 ## Rent exempt
 
