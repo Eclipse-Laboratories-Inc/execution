@@ -39,7 +39,7 @@ NDEBUG=1 ./multinode-demo/setup.sh
 
 ### Faucet
 
-In order for the validators and clients to work, we'll need to spin up a faucet to give out some test tokens. The faucet delivers Milton Friedman-style "air drops" \(free tokens to requesting clients\) to be used in test transactions.
+In order for the validators and clients to work, we'll need to spin up a faucet to give out some test tokens. The faucet delivers Milton Friedman-style "airdrops" \(free tokens to requesting clients\) to be used in test transactions.
 
 Start the faucet with:
 
