@@ -4,7 +4,7 @@ SVM rollup node which replays transactions. This repo uses a local Postgres rath
 
 ## Building
 
-For how to build and test code, it is recommanded to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
+For how to build and test code, it is recommended to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
 
 For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
 
@@ -176,6 +176,6 @@ graph TD
   * Adding a `entry_notifier` related functions in `geyser-plugin`, which is used for writing entries into PG when validator actives.
 
   For Verification Node: 
-  * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
+  * `shred-replay-service` queries entries from PG, converts them to shreds, inserts into `blockstore`.
   *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
   
