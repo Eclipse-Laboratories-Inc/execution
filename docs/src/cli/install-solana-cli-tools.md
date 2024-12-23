@@ -87,7 +87,7 @@ C:\solana-install-tmp\solana-install-init.exe LATEST_SOLANA_RELEASE_VERSION
 
 - Close the command prompt window and re-open a new command prompt window as a
   normal user
-  - Search for "Command Prompt" in the search bar, then left click on the
+  - Search for "Command Prompt" in the search bar, then left-click on the
     Command Prompt app icon, no need to run as Administrator)
 - Confirm you have the desired version of `solana` installed by entering:
 
@@ -100,7 +100,7 @@ solana --version
 
 ## Download Prebuilt Binaries
 
-If you would rather not use `solana-install` to manage the install, you can
+If you would rather not use `solana-install` to manage the installation, you can
 manually download and install the binaries.
 
 ### Linux
