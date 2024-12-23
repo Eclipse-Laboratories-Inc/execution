@@ -2,9 +2,9 @@
 title: Performance Metrics
 ---
 
-Solana cluster performance is measured as average number of transactions per second that the network can sustain \(TPS\). And, how long it takes for a transaction to be confirmed by super majority of the cluster \(Confirmation Time\).
+Solana cluster performance is measured as the average number of transactions per second that the network can sustain \(TPS\). And, how long it takes for a transaction to be confirmed by super majority of the cluster \(Confirmation Time\).
 
-Each cluster node maintains various counters that are incremented on certain events. These counters are periodically uploaded to a cloud based database. Solana's metrics dashboard fetches these counters, and computes the performance metrics and displays it on the dashboard.
+Each cluster node maintains various counters that are incremented on certain events. These counters are periodically uploaded to a cloud-based database. Solana's metrics dashboard fetches these counters, and computes the performance metrics and displays it on the dashboard.
 
 ## TPS
 
