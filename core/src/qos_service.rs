@@ -653,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_or_remove_transaction_costs_commited() {
+    fn test_update_or_remove_transaction_costs_committed() {
         solana_logger::setup();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
