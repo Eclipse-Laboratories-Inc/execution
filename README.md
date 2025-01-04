@@ -4,7 +4,7 @@ SVM rollup node which replays transactions. This repo uses a local Postgres rath
 
 ## Building
 
-For how to build and test code, it is recommanded to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
+For how to build and test code, it is recommended to see [solana](https://github.com/solana-labs/solana/blob/master/README.md)'s succinct instructions. 
 
 For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
 
@@ -116,7 +116,7 @@ graph TD
     libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
     host -- PostgreSQL server ip address
     user -- Username of database
-    password -- Paddword of database
+    password -- Password of database
     dbname -- Database name
     port -- Port of PostgreSQL server, in our case, 5432.
     ```
