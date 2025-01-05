@@ -157,7 +157,7 @@ solana program deploy --buffer <KEYPAIR_PATH> <PROGRAM_FILEPATH>
 Both program and buffer accounts can be closed and their lamport balances
 transferred to a recipient's account.
 
-If deployment fails there will be a left over buffer account that holds
+If the deployment fails there will be a leftover buffer account that holds
 lamports. The buffer account can either be used to [resume a
 deploy](#resuming-a-failed-deploy) or closed.
 
