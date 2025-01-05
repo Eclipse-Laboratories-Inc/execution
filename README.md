@@ -176,6 +176,6 @@ graph TD
   * Adding a `entry_notifier` related functions in `geyser-plugin`, which is used for writing entries into PG when validator actives.
 
   For Verification Node: 
-  * `shred-replay-service` querys entries from PG, converts them to shreds, inserts into `blockstore`.
+  * `shred-replay-service` queries entries from PG, converts them to shreds, inserts into `blockstore`.
   *  Use `solana-ledger-tool`'s verify function, generating bank hash for whole blockstore.
   
