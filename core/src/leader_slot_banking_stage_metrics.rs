@@ -44,7 +44,7 @@ pub(crate) struct ProcessTransactionsSummary {
     // Total amount of time spent running the cost model
     pub cost_model_us: u64,
 
-    // Breakdown of time spent executing and comitting transactions
+    // Breakdown of time spent executing and committing transactions
     pub execute_and_commit_timings: LeaderExecuteAndCommitTimings,
 
     // Breakdown of all the transaction errors from transactions passed for execution
