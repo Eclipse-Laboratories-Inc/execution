@@ -56,7 +56,7 @@ graph TD
   
   Instructions:
   
-  a. Build code with submdoule
+  a. Build code with submodule
     
     ```
     git clone https://github.com/Eclipse-Laboratories-Inc/settlement.git

@@ -19,7 +19,7 @@ DO send the email from an email domain that is less likely to get flagged for sp
 
 Expect a response as fast as possible, typically within 72 hours.
 
-If you do not receive a response within that time frame, please do followup with the team directly. You can do this through discord (#core-technology) by pinging the admins of the channel and referencing the fact that you submitted a security bounty.
+If you do not receive a response within that time frame, please do follow up with the team directly. You can do this through discord (#core-technology) by pinging the admins of the channel and referencing the fact that you submitted a security bounty.
 
 As above, please DO NOT include attachments or provide detail regarding the security issue in this email. 
 
