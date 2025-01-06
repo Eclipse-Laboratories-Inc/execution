@@ -24,14 +24,14 @@ annotate() {
   fi
 }
 
-# Assume everyting needs to be tested when this file or any Dockerfile changes
+# Assume everything needs to be tested when this file or any Dockerfile changes
 mandatory_affected_files=()
 mandatory_affected_files+=(^ci/buildkite-pipeline.sh)
 mandatory_affected_files+=(^ci/docker-rust/Dockerfile)
 mandatory_affected_files+=(^ci/docker-rust-nightly/Dockerfile)
 
 # Checks if a CI pull request affects one or more path patterns.  Each
-# pattern argument is checked in series. If one of them found to be affected,
+# pattern argument is checked in series. If one of them is found to be affected,
 # return immediately as such.
 #
 # Bash regular expressions are permitted in the pattern:
