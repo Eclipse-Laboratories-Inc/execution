@@ -443,7 +443,7 @@ mod tests {
                 Some(&snapshot_config),
             );
 
-            // sleep for 1ms to create a newer timestmap for gossip entry
+            // sleep for 1ms to create a newer timestamp for gossip entry
             // otherwise the timestamp won't be newer.
             std::thread::sleep(Duration::from_millis(1));
         }
