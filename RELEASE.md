@@ -123,7 +123,7 @@ Alternatively use the Github UI.
 
 ### Prepare for the next release
 1.  Go to [GitHub Releases](https://github.com/solana-labs/solana/releases) and create a new draft release for `X.Y.Z+1` with empty release notes.  This allows people to incrementally add new release notes until it's time for the next release
-    1. Also, point the branch field to the same branch and mark the relese as **"This is a pre-release"**.
+    1. Also, point the branch field to the same branch and mark the release as **"This is a pre-release"**.
 1.  Go to the [Github Milestones](https://github.com/solana-labs/solana/milestones).  Create a new milestone for the `X.Y.Z+1`, move over
 unresolved issues still in the `X.Y.Z` milestone, then close the `X.Y.Z` milestone.
 
