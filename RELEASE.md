@@ -112,7 +112,7 @@ Alternatively use the Github UI.
    1. If this is a patch release, review all the commits since the previous release on this branch and add details as needed.
 1. Click "Save Draft", then confirm the release notes look good and the tag name and branch are correct.
 1. Ensure all desired commits (usually backports) are landed on the branch by now.
-1. Ensure the release is marked **"This is a pre-release"**.  This flag will need to be be removed manually after confirming the the Linux binary artifacts appear at a later step.
+1. Ensure the release is marked **"This is a pre-release"**.  This flag will need to be removed manually after confirming that the Linux binary artifacts appear at a later step.
 1. Go back into edit the release and click "Publish release" while being marked as a pre-release.
 1. Confirm there is new git tag with intended version number at the intended revision after running `git fetch` locally.
 
@@ -123,7 +123,7 @@ Alternatively use the Github UI.
 
 ### Prepare for the next release
 1.  Go to [GitHub Releases](https://github.com/solana-labs/solana/releases) and create a new draft release for `X.Y.Z+1` with empty release notes.  This allows people to incrementally add new release notes until it's time for the next release
-    1. Also, point the branch field to the same branch and mark the relese as **"This is a pre-release"**.
+    1. Also, point the branch field to the same branch and mark the release as **"This is a pre-release"**.
 1.  Go to the [Github Milestones](https://github.com/solana-labs/solana/milestones).  Create a new milestone for the `X.Y.Z+1`, move over
 unresolved issues still in the `X.Y.Z` milestone, then close the `X.Y.Z` milestone.
 

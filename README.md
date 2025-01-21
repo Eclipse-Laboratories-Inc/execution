@@ -10,7 +10,7 @@ For Apple chip build, there's a [note](./apple_ chip_build.md) that might help.
 
 ### Design
 
-The architecture of design as below:
+The architecture of design is as below:
 
 ![Architecture](./architecture-diagram.svg)
 
@@ -20,7 +20,7 @@ There are two roles in our Layer 2: __Execution Layer__ and __Settlement Layer__
   
   * Execution Node
     
-    Handles all Layer 2 transactions, produce block, push block to DA. 
+    Handles all Layer 2 transactions, produces block, push block to DA. 
   
   * Verification Node:
     
@@ -88,7 +88,7 @@ graph TD
   
   c. Configure plugin settings
     
-    &emsp;The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
+    &emsp;The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need to change some settings in it:
     
     ```json
     {
