@@ -102,7 +102,7 @@ Let's explain the parameters in above command:
 
 ## Configuration plugin
 
-The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need change some settings in it:
+The plugin configure file is `solana-accountsdb-plugin-postgres/scripts/geyser.json`, we need to change some settings in it:
 
 ```
 {
@@ -148,7 +148,7 @@ it will store ledge in floder ``./test-ledge``.
 
 ## Start verify node
 
-Verify node use the same plugin configure file with exectution node.
+Verify node use the same plugin configure file with execution node.
 
 And we need to obtain 'genesis.bin' from execution node's ledger directory ``(./test-ledge)``, and store it in verification node file system ``genesis_path``.
 
