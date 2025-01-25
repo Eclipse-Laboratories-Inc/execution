@@ -113,7 +113,7 @@ graph TD
     
     &emsp;The configuration details are:
     ```
-    libpath -- Our `libsolana_geyser_plugin_postgres` lib, should be in `target/release/libsolana_geyser_plugin_postgres.dylib
+    libpath -- Our `libsolana_geyser_plugin_postgres` library should be in `target/release/libsolana_geyser_plugin_postgres.dylib`
     host -- PostgreSQL server ip address
     user -- Username of database
     password -- Password of database
@@ -129,7 +129,7 @@ graph TD
     ./target/release/solana-test-validator --geyser-plugin-config ./solana-accountsdb-plugin-postgres/scripts/geyser.json
     ```
     
-    &emsp;Now our test validator start producing blocks, and all these data saved in PostgreSQL.
+    &emsp;Now our test validator start producing blocks, and all these data are saved in PostgreSQL.
 
 ##### 1.2 Verification Node
 
