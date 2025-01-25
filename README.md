@@ -1,6 +1,6 @@
 # SVM Rollup Node
 
-SVM rollup node which replays transactions. This repo uses a local Postgres rather than an actual DA layer. There are no execution layer or DA customizations in this repo.
+SVM rollup node which replays transactions. This repo uses a local Postgres rather than an actual DA layer. There is no execution layer or DA customizations in this repo.
 
 ## Building
 
