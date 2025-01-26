@@ -112,7 +112,7 @@ less than the float equivalents:
 
 ```
          u64   f32
-Multipy    8   176
+Multiply    8   176
 Divide     9   219
 ```
 
