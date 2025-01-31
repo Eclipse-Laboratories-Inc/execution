@@ -22,7 +22,7 @@ Start a local cluster and run sanity on it
   options:
    -i [number] - Number of times to run sanity (default: $iterations)
    -k [number] - Restart the cluster after this number of sanity iterations (default: $restartInterval)
-   -R          - Restart the cluster by incrementially stopping and restarting
+   -R          - Restart the cluster by incrementally stopping and restarting
                  nodes (at the cadence specified by -k).  When disabled all
                  nodes will be first killed then restarted (default: $rollingRestart)
    -b          - Disable leader rotation
@@ -84,7 +84,7 @@ nodes=(
     --rpc-port 18899"
 )
 
-if [[ extraNodes -gt 0 ]]; then
+if [[ $extraNodes -gt 0 ]]; then
   for i in $(seq 1 $extraNodes); do
     portStart=$((8100 + i * 50))
     portEnd=$((portStart + 49))
