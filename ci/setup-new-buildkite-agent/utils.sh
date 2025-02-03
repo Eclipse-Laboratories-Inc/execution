@@ -14,7 +14,7 @@ ensure_env() {
   $RC
 }
 
-# Some scripts disable SSH password logins. If no one hash setup authorized_keys
+# Some scripts disable SSH password logins. If no one has setup authorized_keys
 # this will result in the machine being remotely inaccessible. Check that the
 # user running this script has setup their keys
 check_ssh_authorized_keys() {
@@ -37,7 +37,7 @@ check_ssh_authorized_keys() {
   fi
   if ! $rc; then
     echo "ERROR! This script will disable SSH password logins and you don't"
-    echo "appear to have set up any authorized keys.  Please add you SSH"
+    echo "appear to have set up any authorized keys.  Please add your SSH"
     echo "public key to ${authorized_keys} before continuing!"
   fi
   $rc
