@@ -22,7 +22,7 @@ To decrypt `secrets.ejson` for modification, run:
 $ ejson decrypt secrets.ejson -o secrets_unencrypted.ejson
 ```
 
-Edit, then run the following to re-encrypt the file **BEFORE COMMITING YOUR
+Edit, then run the following to re-encrypt the file **BEFORE COMMITTING YOUR
 CHANGES**:
 ```bash
 $ ejson encrypt secrets_unencrypted.ejson
