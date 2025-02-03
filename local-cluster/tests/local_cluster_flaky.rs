@@ -1,4 +1,4 @@
-//! Move flakey tests here so that when they fail, there's less to retry in CI
+//! Move flaky tests here so that when they fail, there's less to retry in CI
 //! because these tests are run separately from the rest of local cluster tests.
 #![allow(clippy::integer_arithmetic)]
 use {
