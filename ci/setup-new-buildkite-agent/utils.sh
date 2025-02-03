@@ -37,7 +37,7 @@ check_ssh_authorized_keys() {
   fi
   if ! $rc; then
     echo "ERROR! This script will disable SSH password logins and you don't"
-    echo "appear to have set up any authorized keys.  Please add you SSH"
+    echo "appear to have set up any authorized keys.  Please add your SSH"
     echo "public key to ${authorized_keys} before continuing!"
   fi
   $rc
