@@ -184,13 +184,13 @@ test-local-cluster)
   fi
   exit 0
   ;;
-test-local-cluster-flakey)
+test-local-cluster-flaky)
   _ "$cargo" stable build --release --bins ${V:+--verbose}
   if need_to_generate_test_result; then
-    _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
+    _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_flaky ${V:+--verbose} -- --test-threads=1 -Z unstable-options --format json --report-time | tee results.json
     exit_if_error "${PIPESTATUS[0]}"
   else
-    _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_flakey ${V:+--verbose} -- --nocapture --test-threads=1
+    _ "$cargo" stable test --release --package solana-local-cluster --test local_cluster_flaky ${V:+--verbose} -- --nocapture --test-threads=1
   fi
   exit 0
   ;;

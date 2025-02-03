@@ -272,8 +272,8 @@ EOF
     ". ci/rust-version.sh; ci/docker-run.sh \$\$rust_stable_docker_image ci/test-local-cluster.sh" \
     40
 
-  command_step "local-cluster-flakey" \
-    ". ci/rust-version.sh; ci/docker-run.sh \$\$rust_stable_docker_image ci/test-local-cluster-flakey.sh" \
+  command_step "local-cluster-flaky" \
+    ". ci/rust-version.sh; ci/docker-run.sh \$\$rust_stable_docker_image ci/test-local-cluster-flaky.sh" \
     10
 
   command_step "local-cluster-slow-1" \
