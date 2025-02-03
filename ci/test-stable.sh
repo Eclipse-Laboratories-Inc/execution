@@ -135,12 +135,12 @@ test-stable-bpf)
       --manifest-path programs/bpf/Cargo.toml \
       --no-default-features --features=bpf_c,bpf_rust assert_instruction_count \
       -- -Z unstable-options --format json --report-time |& tee results.json
-    awk '!/{ "type": .* }/' results.json >"${bpf_target_path}"/deploy/instuction_counts.txt
+    awk '!/{ "type": .* }/' results.json >"${bpf_target_path}"/deploy/instruction_counts.txt
   else
     _ "$cargo" stable test \
       --manifest-path programs/bpf/Cargo.toml \
       --no-default-features --features=bpf_c,bpf_rust assert_instruction_count \
-      -- --nocapture &> "${bpf_target_path}"/deploy/instuction_counts.txt
+      -- --nocapture &> "${bpf_target_path}"/deploy/instruction_counts.txt
   fi
 
   bpf_dump_archive="bpf-dumps.tar.bz2"
